@@ -4,6 +4,7 @@ from tkinter import ttk, messagebox
 from datetime import date
 
 from base_datos import obtener_conexion
+from vista_productos import ModuloProductos
 
 
 class DashboardApp:
@@ -199,7 +200,7 @@ class DashboardApp:
             fg=self.TEXTO_SECUNDARIO
         ).pack(anchor="w", pady=(5, 0))
 
-    
+    def obtener_estadisticas(self):
         estadisticas = {
             "mermas_hoy": 0,
             "productos": 0,
@@ -483,10 +484,7 @@ class DashboardApp:
         ).pack(pady=(0, 30))
 
     def abrir_productos(self):
-        self.mostrar_modulo_pendiente(
-            "Productos",
-            "Administra los productos y sus costos."
-        )
+        ModuloProductos(self).mostrar()
 
     def abrir_mermas(self):
         self.mostrar_modulo_pendiente(
