@@ -3,7 +3,11 @@ from tkinter import ttk, messagebox
 from datetime import date
 
 from base_datos import obtener_conexion
+from vista_productos import ModuloProductos
 from vista_mermas import RegistrarMermaView
+from vista_inventario import ModuloInventario
+from vista_historial import ModuloHistorial
+from vista_reportes import ModuloReportes
 
 
 class DashboardApp:
@@ -201,7 +205,6 @@ class DashboardApp:
             fg=self.TEXTO_SECUNDARIO
         ).pack(anchor="w", pady=(5, 0))
 
-    
     def obtener_estadisticas(self):
         estadisticas = {
             "mermas_hoy": 0,
@@ -486,31 +489,19 @@ class DashboardApp:
         ).pack(pady=(0, 30))
 
     def abrir_productos(self):
-        self.mostrar_modulo_pendiente(
-            "Productos",
-            "Administra los productos y sus costos."
-        )
+        ModuloProductos(self).mostrar()
 
     def abrir_mermas(self):
         self.vista_mermas.mostrar()
 
     def abrir_inventario(self):
-        self.mostrar_modulo_pendiente(
-            "Inventario",
-            "Consulta las existencias de los productos."
-        )
+        ModuloInventario(self).mostrar()
 
     def abrir_historial(self):
-        self.mostrar_modulo_pendiente(
-            "Historial",
-            "Consulta las mermas registradas anteriormente."
-        )
+        ModuloHistorial(self).mostrar()
 
     def abrir_reportes(self):
-        self.mostrar_modulo_pendiente(
-            "Reportes",
-            "Analiza los costos y las pérdidas de productos."
-        )
+        ModuloReportes(self).mostrar()
 
 
 if __name__ == "__main__":

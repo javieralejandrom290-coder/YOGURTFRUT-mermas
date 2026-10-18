@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Entornos virtuales
+venv/
+.venv/
+env/
+
+# Base de datos local (cada quien genera la suya al correr main.py)
+*.db
+
+# Editores / sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Archivos locales de prueba
+credenciales_prueba.txt
