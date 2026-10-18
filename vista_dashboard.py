@@ -1,10 +1,13 @@
-
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import date
 
 from base_datos import obtener_conexion
 from vista_productos import ModuloProductos
+from vista_mermas import RegistrarMermaView
+from vista_inventario import ModuloInventario
+from vista_historial import ModuloHistorial
+from vista_reportes import ModuloReportes
 
 
 class DashboardApp:
@@ -33,6 +36,8 @@ class DashboardApp:
         self.configurar_estilos()
         self.crear_menu_lateral()
         self.crear_contenido()
+
+        self.vista_mermas = RegistrarMermaView(self)
 
         self.mostrar_inicio()
 
@@ -487,28 +492,16 @@ class DashboardApp:
         ModuloProductos(self).mostrar()
 
     def abrir_mermas(self):
-        self.mostrar_modulo_pendiente(
-            "Registrar merma",
-            "Registra las pérdidas de productos de la heladería."
-        )
+        self.vista_mermas.mostrar()
 
     def abrir_inventario(self):
-        self.mostrar_modulo_pendiente(
-            "Inventario",
-            "Consulta las existencias de los productos."
-        )
+        ModuloInventario(self).mostrar()
 
     def abrir_historial(self):
-        self.mostrar_modulo_pendiente(
-            "Historial",
-            "Consulta las mermas registradas anteriormente."
-        )
+        ModuloHistorial(self).mostrar()
 
     def abrir_reportes(self):
-        self.mostrar_modulo_pendiente(
-            "Reportes",
-            "Analiza los costos y las pérdidas de productos."
-        )
+        ModuloReportes(self).mostrar()
 
 
 if __name__ == "__main__":

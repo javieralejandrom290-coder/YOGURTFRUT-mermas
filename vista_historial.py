@@ -4,7 +4,9 @@ from datetime import datetime
 
 from base_datos import obtener_conexion
 from ui_comunes import crear_boton, crear_tabla
-from vista_mermas import MOTIVOS
+from vista_mermas import RegistrarMermaView
+
+MOTIVOS = RegistrarMermaView.MOTIVOS
 
 
 def parsear_fecha(texto):
