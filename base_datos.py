@@ -1,9 +1,23 @@
-
 import sqlite3
-from pathlib import Path
+import pathlib
 
 # Ruta de la base de datos
-RUTA_BASE_DATOS = Path(__file__).resolve().parent / "mermas.db"
+RUTA_BASE_DATOS = pathlib.Path(__file__).resolve().parent / "mermas.db"
+
+# Definición de la tabla usuarios (se usa al crearla y al migrarla)
+SQL_TABLA_USUARIOS = """
+    CREATE TABLE IF NOT EXISTS {tabla} (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT NOT NULL,
+        usuario TEXT NOT NULL UNIQUE,
+        contrasena_hash TEXT NOT NULL,
+        rol TEXT NOT NULL DEFAULT 'Empleado'
+            CHECK (rol IN ('Administrador', 'Gerente', 'Empleado')),
+        activo INTEGER NOT NULL DEFAULT 1
+            CHECK (activo IN (0, 1)),
+        fecha_creacion TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+"""
 
 
 def obtener_conexion():
@@ -14,26 +28,76 @@ def obtener_conexion():
     return conexion
 
 
+def migrar_roles():
+    """
+    Actualiza la tabla usuarios para permitir el rol 'Gerente'.
+    Si la tabla ya lo permite, o todavía no existe, no hace nada.
+    Los datos existentes se conservan.
+    """
+    if not RUTA_BASE_DATOS.exists():
+        return
+
+    # isolation_level=None para controlar manualmente la transacción
+    conexion = sqlite3.connect(RUTA_BASE_DATOS, isolation_level=None)
+
+    try:
+        fila = conexion.execute(
+            """
+            SELECT sql FROM sqlite_master
+            WHERE type = 'table' AND name = 'usuarios'
+            """
+        ).fetchone()
+
+        if fila is None or "'Gerente'" in fila[0]:
+            return
+
+        # Debe desactivarse fuera de la transacción para que
+        # DROP TABLE no borre en cascada las mermas relacionadas
+        conexion.execute("PRAGMA foreign_keys = OFF")
+        conexion.execute("BEGIN")
+
+        try:
+            conexion.execute(SQL_TABLA_USUARIOS.format(tabla="usuarios_nueva"))
+
+            conexion.execute(
+                """
+                INSERT INTO usuarios_nueva
+                    (id, nombre, usuario, contrasena_hash,
+                     rol, activo, fecha_creacion)
+                SELECT
+                    id, nombre, usuario, contrasena_hash,
+                    rol, activo, fecha_creacion
+                FROM usuarios
+                """
+            )
+
+            conexion.execute("DROP TABLE usuarios")
+            conexion.execute(
+                "ALTER TABLE usuarios_nueva RENAME TO usuarios"
+            )
+            conexion.execute("COMMIT")
+
+        except Exception:
+            conexion.execute("ROLLBACK")
+            raise
+
+        conexion.execute("PRAGMA foreign_keys = ON")
+
+    finally:
+        conexion.close()
+
+
 def inicializar_base_datos():
     """Crea las tablas necesarias si todavía no existen."""
+
+    # Primero se actualiza el esquema de usuarios si hace falta
+    migrar_roles()
 
     with obtener_conexion() as conexion:
         cursor = conexion.cursor()
 
         # Tabla de usuarios
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS usuarios (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nombre TEXT NOT NULL,
-                usuario TEXT NOT NULL UNIQUE,
-                contrasena_hash TEXT NOT NULL,
-                rol TEXT NOT NULL DEFAULT 'Empleado'
-                    CHECK (rol IN ('Administrador', 'Empleado')),
-                activo INTEGER NOT NULL DEFAULT 1
-                    CHECK (activo IN (0, 1)),
-                fecha_creacion TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+        cursor.execute(SQL_TABLA_USUARIOS.format(tabla="usuarios"))
 
         # Tabla de categorías
         cursor.execute("""
