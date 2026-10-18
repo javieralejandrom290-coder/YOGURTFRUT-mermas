@@ -4,6 +4,12 @@ import pathlib
 # Ruta de la base de datos
 RUTA_BASE_DATOS = pathlib.Path(__file__).resolve().parent / "mermas.db"
 
+# Hash de la contraseña "test" (generado con LoginApp.generar_hash)
+HASH_USUARIO_TEST = (
+    "c31f3838ee747d93b7d8826f4190defc$"
+    "7e00975737b846ef968f20e67771ed10dfeb68474c8e3c5ee6a3180e0872b714"
+)
+
 # Definición de la tabla usuarios (se usa al crearla y al migrarla)
 SQL_TABLA_USUARIOS = """
     CREATE TABLE IF NOT EXISTS {tabla} (
@@ -146,6 +152,16 @@ def inicializar_base_datos():
                     ON DELETE SET NULL
             )
         """)
+
+        # Usuario de prueba compartido por el equipo (usuario: test, contraseña: test)
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO usuarios
+                (nombre, usuario, contrasena_hash, rol)
+            VALUES ('Usuario de prueba', 'test', ?, 'Administrador')
+            """,
+            (HASH_USUARIO_TEST,)
+        )
 
         conexion.commit()
 
