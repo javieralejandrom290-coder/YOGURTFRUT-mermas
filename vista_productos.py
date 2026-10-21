@@ -3,7 +3,7 @@ import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-from base_datos import obtener_conexion
+from base_datos import obtener_conexion, registrar_movimiento_inventario
 
 
 UNIDADES = ["kg", "g", "L", "ml", "pza", "caja", "bolsa"]
@@ -465,6 +465,11 @@ class ModuloProductos:
                     )
 
                     if editando:
+                        existencia_anterior = conexion.execute(
+                            "SELECT existencia FROM productos WHERE id = ?",
+                            (producto["id"],)
+                        ).fetchone()[0]
+
                         conexion.execute(
                             """
                             UPDATE productos
@@ -475,8 +480,10 @@ class ModuloProductos:
                             """,
                             datos + (producto["id"],)
                         )
+                        producto_id = producto["id"]
                     else:
-                        conexion.execute(
+                        existencia_anterior = 0
+                        producto_id = conexion.execute(
                             """
                             INSERT INTO productos
                                 (nombre, categoria_id, unidad,
@@ -484,6 +491,17 @@ class ModuloProductos:
                             VALUES (?, ?, ?, ?, ?, ?)
                             """,
                             datos
+                        ).lastrowid
+
+                    # Un ajuste manual de existencia también es un
+                    # movimiento de inventario (entrada o salida)
+                    diferencia = numeros["existencia"] - existencia_anterior
+                    if diferencia:
+                        registrar_movimiento_inventario(
+                            conexion,
+                            producto_id,
+                            entrada=max(diferencia, 0),
+                            salida=max(-diferencia, 0)
                         )
 
             except sqlite3.IntegrityError:

@@ -2,12 +2,17 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import date
 
+import base_datos
 from base_datos import obtener_conexion
 from vista_productos import ModuloProductos
 from vista_mermas import RegistrarMermaView
 from vista_inventario import ModuloInventario
 from vista_historial import ModuloHistorial
 from vista_reportes import ModuloReportes
+from vista_proveedores import ModuloProveedores
+from vista_compras import ModuloCompras
+from vista_empleados import ModuloEmpleados
+from vista_usuarios import ModuloUsuarios
 
 
 class DashboardApp:
@@ -17,7 +22,10 @@ class DashboardApp:
         self.nombre = nombre
         self.rol = rol
 
-        self.root.title("YOGURTFRUT | Control de Mermas")
+        titulo = "YOGURTFRUT | Control de Mermas"
+        if base_datos.RUTA_BASE_DATOS.name != "mermas.db":
+            titulo += "  [BASE DE PRUEBA]"
+        self.root.title(titulo)
         self.root.geometry("1200x720")
         self.root.minsize(1000, 620)
         self.root.configure(bg="#F3F6F4")
@@ -100,11 +108,18 @@ class DashboardApp:
         opciones = [
             ("⌂", "Inicio", self.mostrar_inicio),
             ("▣", "Productos", self.abrir_productos),
+            ("⛟", "Proveedores", self.abrir_proveedores),
+            ("⊕", "Compras", self.abrir_compras),
             ("＋", "Registrar merma", self.abrir_mermas),
             ("▤", "Inventario", self.abrir_inventario),
             ("◷", "Historial", self.abrir_historial),
             ("▥", "Reportes", self.abrir_reportes),
+            ("☺", "Empleados", self.abrir_empleados),
         ]
+
+        # Solo los administradores manejan las cuentas del sistema
+        if self.rol == "Administrador":
+            opciones.append(("⚿", "Usuarios", self.abrir_usuarios))
 
         self.botones_menu = {}
 
@@ -123,7 +138,7 @@ class DashboardApp:
                 bd=0,
                 cursor="hand2",
                 padx=15,
-                pady=12
+                pady=8
             )
             boton.pack(fill="x", padx=10, pady=3)
             self.botones_menu[texto] = boton
@@ -502,6 +517,18 @@ class DashboardApp:
 
     def abrir_reportes(self):
         ModuloReportes(self).mostrar()
+
+    def abrir_proveedores(self):
+        ModuloProveedores(self).mostrar()
+
+    def abrir_compras(self):
+        ModuloCompras(self).mostrar()
+
+    def abrir_empleados(self):
+        ModuloEmpleados(self).mostrar()
+
+    def abrir_usuarios(self):
+        ModuloUsuarios(self).mostrar()
 
 
 if __name__ == "__main__":

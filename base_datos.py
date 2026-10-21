@@ -1,14 +1,14 @@
 import sqlite3
 import pathlib
+from datetime import date
+
+import seguridad
 
 # Ruta de la base de datos
 RUTA_BASE_DATOS = pathlib.Path(__file__).resolve().parent / "mermas.db"
 
-# Hash de la contraseña "test" (generado con LoginApp.generar_hash)
-HASH_USUARIO_TEST = (
-    "c31f3838ee747d93b7d8826f4190defc$"
-    "7e00975737b846ef968f20e67771ed10dfeb68474c8e3c5ee6a3180e0872b714"
-)
+# Tipos de merma del catálogo (modelo relacional, tabla TipoMerma)
+TIPOS_MERMA = ["Natural", "Operativa", "Administrativa", "Hurto"]
 
 # Definición de la tabla usuarios (se usa al crearla y al migrarla)
 SQL_TABLA_USUARIOS = """
@@ -93,6 +93,100 @@ def migrar_roles():
         conexion.close()
 
 
+def agregar_columna_si_falta(conexion, tabla, columna, definicion):
+    """Agrega una columna a una tabla existente si todavía no la tiene."""
+    columnas = [
+        fila[1]
+        for fila in conexion.execute(f"PRAGMA table_info({tabla})")
+    ]
+
+    if columna not in columnas:
+        conexion.execute(
+            f"ALTER TABLE {tabla} ADD COLUMN {columna} {definicion}"
+        )
+
+
+def registrar_movimiento_inventario(conexion, producto_id, entrada=0, salida=0,
+                                    fecha=None):
+    """
+    Registra una entrada o salida en el inventario del día.
+    Se llama DESPUÉS de actualizar la existencia del producto, dentro
+    de la misma transacción. Si es el primer movimiento del día se crea
+    el registro con su stock inicial; si no, se acumula.
+    La fecha es hoy, salvo que se indique otra (lo usa datos_prueba.py).
+    """
+    hoy = (fecha or date.today()).isoformat()
+
+    existencia = conexion.execute(
+        "SELECT existencia FROM productos WHERE id = ?",
+        (producto_id,)
+    ).fetchone()[0]
+
+    registro = conexion.execute(
+        "SELECT id FROM inventario WHERE producto_id = ? AND fecha = ?",
+        (producto_id, hoy)
+    ).fetchone()
+
+    if registro:
+        conexion.execute(
+            """
+            UPDATE inventario
+            SET entradas = entradas + ?,
+                salidas = salidas + ?,
+                stock_final = ?
+            WHERE id = ?
+            """,
+            (entrada, salida, existencia, registro[0])
+        )
+    else:
+        conexion.execute(
+            """
+            INSERT INTO inventario
+                (producto_id, fecha, stock_inicial,
+                 entradas, salidas, stock_final)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                producto_id,
+                hoy,
+                existencia - entrada + salida,
+                entrada,
+                salida,
+                existencia
+            )
+        )
+
+
+def migrar_usuario_test(cursor):
+    """
+    Versiones anteriores creaban el usuario test/test. Si sigue con su
+    contraseña original y no existe 'admin', se convierte en admin/admin.
+    Si ya hay un 'admin' se deja como está para no bloquear a nadie.
+    """
+    test = cursor.execute(
+        "SELECT id, contrasena_hash FROM usuarios WHERE usuario = 'test'"
+    ).fetchone()
+
+    if not test or not seguridad.verificar_hash("test", test[1]):
+        return
+
+    hay_admin = cursor.execute(
+        "SELECT 1 FROM usuarios WHERE usuario = 'admin'"
+    ).fetchone()
+    if hay_admin:
+        return
+
+    cursor.execute(
+        """
+        UPDATE usuarios
+        SET usuario = 'admin', nombre = 'Administrador',
+            contrasena_hash = ?, rol = 'Administrador', activo = 1
+        WHERE id = ?
+        """,
+        (seguridad.generar_hash("admin"), test[0])
+    )
+
+
 def inicializar_base_datos():
     """Crea las tablas necesarias si todavía no existen."""
 
@@ -134,12 +228,86 @@ def inicializar_base_datos():
             )
         """)
 
+        # Tabla de proveedores
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS proveedores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL UNIQUE,
+                telefono TEXT,
+                correo TEXT,
+                activo INTEGER NOT NULL DEFAULT 1
+                    CHECK (activo IN (0, 1))
+            )
+        """)
+
+        # Tabla de compras (encabezado de cada pedido a un proveedor)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS compras (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                proveedor_id INTEGER NOT NULL,
+                usuario_id INTEGER,
+                fecha TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                total REAL NOT NULL DEFAULT 0
+                    CHECK (total >= 0),
+                FOREIGN KEY (proveedor_id)
+                    REFERENCES proveedores(id),
+                FOREIGN KEY (usuario_id)
+                    REFERENCES usuarios(id)
+                    ON DELETE SET NULL
+            )
+        """)
+
+        # Tabla de detalle de compras (productos de cada compra)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS detalle_compras (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                compra_id INTEGER NOT NULL,
+                producto_id INTEGER NOT NULL,
+                cantidad REAL NOT NULL CHECK (cantidad > 0),
+                precio_unitario REAL NOT NULL
+                    CHECK (precio_unitario >= 0),
+                FOREIGN KEY (compra_id)
+                    REFERENCES compras(id)
+                    ON DELETE CASCADE,
+                FOREIGN KEY (producto_id)
+                    REFERENCES productos(id)
+            )
+        """)
+
+        # Tabla de empleados (personal que genera o reporta mermas)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS empleados (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL,
+                puesto TEXT NOT NULL,
+                turno TEXT NOT NULL,
+                activo INTEGER NOT NULL DEFAULT 1
+                    CHECK (activo IN (0, 1))
+            )
+        """)
+
+        # Catálogo de tipos de merma
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS tipos_merma (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL UNIQUE
+            )
+        """)
+
+        for tipo in TIPOS_MERMA:
+            cursor.execute(
+                "INSERT OR IGNORE INTO tipos_merma (nombre) VALUES (?)",
+                (tipo,)
+            )
+
         # Tabla de mermas
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS mermas (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 producto_id INTEGER NOT NULL,
                 usuario_id INTEGER,
+                empleado_id INTEGER,
+                tipo_merma_id INTEGER,
                 cantidad REAL NOT NULL CHECK (cantidad > 0),
                 motivo TEXT NOT NULL,
                 observaciones TEXT,
@@ -149,19 +317,54 @@ def inicializar_base_datos():
                     REFERENCES productos(id),
                 FOREIGN KEY (usuario_id)
                     REFERENCES usuarios(id)
-                    ON DELETE SET NULL
+                    ON DELETE SET NULL,
+                FOREIGN KEY (empleado_id)
+                    REFERENCES empleados(id),
+                FOREIGN KEY (tipo_merma_id)
+                    REFERENCES tipos_merma(id)
             )
         """)
 
-        # Usuario de prueba compartido por el equipo (usuario: test, contraseña: test)
-        cursor.execute(
-            """
-            INSERT OR IGNORE INTO usuarios
-                (nombre, usuario, contrasena_hash, rol)
-            VALUES ('Usuario de prueba', 'test', ?, 'Administrador')
-            """,
-            (HASH_USUARIO_TEST,)
+        # Bases creadas antes de existir empleados y tipos de merma
+        agregar_columna_si_falta(
+            conexion, "mermas", "empleado_id",
+            "INTEGER REFERENCES empleados(id)"
         )
+        agregar_columna_si_falta(
+            conexion, "mermas", "tipo_merma_id",
+            "INTEGER REFERENCES tipos_merma(id)"
+        )
+
+        # Tabla de inventario: un registro por producto y por día
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS inventario (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                producto_id INTEGER NOT NULL,
+                fecha TEXT NOT NULL,
+                stock_inicial REAL NOT NULL DEFAULT 0,
+                entradas REAL NOT NULL DEFAULT 0
+                    CHECK (entradas >= 0),
+                salidas REAL NOT NULL DEFAULT 0
+                    CHECK (salidas >= 0),
+                stock_final REAL NOT NULL DEFAULT 0,
+                UNIQUE (producto_id, fecha),
+                FOREIGN KEY (producto_id)
+                    REFERENCES productos(id)
+            )
+        """)
+
+        # Si la base no tiene usuarios se crea el administrador inicial
+        # (usuario: admin, contraseña: admin). Se cambian en Usuarios → Mi cuenta.
+        if cursor.execute("SELECT COUNT(*) FROM usuarios").fetchone()[0] == 0:
+            cursor.execute(
+                """
+                INSERT INTO usuarios (nombre, usuario, contrasena_hash, rol)
+                VALUES ('Administrador', 'admin', ?, 'Administrador')
+                """,
+                (seguridad.generar_hash("admin"),)
+            )
+
+        migrar_usuario_test(cursor)
 
         conexion.commit()
 

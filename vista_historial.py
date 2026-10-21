@@ -22,10 +22,25 @@ def parsear_fecha(texto):
         )
 
 
-def consultar_historial(desde=None, hasta=None, motivo=None, producto=""):
-    """Mermas filtradas por rango de fechas, motivo y nombre de producto."""
+def consultar_tipos_merma():
+    with obtener_conexion() as conexion:
+        return [
+            fila["nombre"]
+            for fila in conexion.execute(
+                "SELECT nombre FROM tipos_merma ORDER BY id"
+            )
+        ]
+
+
+def consultar_historial(desde=None, hasta=None, motivo=None, producto="",
+                        tipo=None):
+    """Mermas filtradas por fechas, motivo, tipo y nombre de producto."""
     condiciones = ["p.nombre LIKE ?"]
     parametros = [f"%{producto.strip()}%"]
+
+    if tipo and tipo != "Todos":
+        condiciones.append("t.nombre = ?")
+        parametros.append(tipo)
 
     if desde:
         condiciones.append("date(m.fecha) >= date(?)")
@@ -42,10 +57,14 @@ def consultar_historial(desde=None, hasta=None, motivo=None, producto=""):
             f"""
             SELECT m.id, m.fecha, p.nombre AS producto, p.unidad, m.cantidad,
                    m.motivo, m.costo_total, m.observaciones,
-                   COALESCE(u.nombre, 'Usuario eliminado') AS usuario
+                   COALESCE(u.nombre, 'Usuario eliminado') AS usuario,
+                   COALESCE(t.nombre, 'Sin tipo') AS tipo,
+                   COALESCE(e.nombre, 'Sin empleado') AS empleado
             FROM mermas m
             JOIN productos p ON p.id = m.producto_id
             LEFT JOIN usuarios u ON u.id = m.usuario_id
+            LEFT JOIN tipos_merma t ON t.id = m.tipo_merma_id
+            LEFT JOIN empleados e ON e.id = m.empleado_id
             WHERE {' AND '.join(condiciones)}
             ORDER BY m.fecha DESC, m.id DESC
             """,
@@ -63,6 +82,7 @@ class ModuloHistorial:
         self.var_desde = tk.StringVar()
         self.var_hasta = tk.StringVar()
         self.var_motivo = tk.StringVar(value="Todos")
+        self.var_tipo = tk.StringVar(value="Todos")
         self.var_producto = tk.StringVar()
         self.var_resumen = tk.StringVar()
         self.registros = {}
@@ -110,6 +130,18 @@ class ModuloHistorial:
         combo.pack(side="left", padx=(0, 14))
         combo.bind("<<ComboboxSelected>>", lambda e: self.cargar())
 
+        tk.Label(
+            barra2, text="Tipo:", font=("Segoe UI", 10),
+            bg=d.FONDO, fg=d.TEXTO
+        ).pack(side="left", padx=(0, 6))
+        combo_tipo = ttk.Combobox(
+            barra2, textvariable=self.var_tipo,
+            values=["Todos"] + consultar_tipos_merma(), state="readonly",
+            width=14, font=("Segoe UI", 10)
+        )
+        combo_tipo.pack(side="left", padx=(0, 14))
+        combo_tipo.bind("<<ComboboxSelected>>", lambda e: self.cargar())
+
         crear_boton(d, barra2, "Buscar", self.cargar, principal=True).pack(side="left")
         crear_boton(d, barra2, "Limpiar", self.limpiar).pack(side="left", padx=8)
 
@@ -121,12 +153,13 @@ class ModuloHistorial:
         ).pack(anchor="w", padx=30, pady=(0, 10))
 
         marco, self.tabla = crear_tabla(d, self.contenido, [
-            ("fecha", "Fecha", 135, "w"),
-            ("producto", "Producto", 170, "w"),
-            ("cantidad", "Cantidad", 90, "center"),
-            ("motivo", "Motivo", 150, "w"),
-            ("usuario", "Registró", 130, "w"),
-            ("costo", "Costo", 100, "e"),
+            ("fecha", "Fecha", 125, "w"),
+            ("producto", "Producto", 150, "w"),
+            ("cantidad", "Cantidad", 85, "center"),
+            ("tipo", "Tipo", 100, "w"),
+            ("motivo", "Motivo", 140, "w"),
+            ("empleado", "Empleado", 130, "w"),
+            ("costo", "Costo", 90, "e"),
         ])
         marco.pack(fill="both", expand=True, padx=30, pady=(0, 6))
         self.tabla.bind("<Double-1>", lambda e: self.ver_detalle())
@@ -143,6 +176,7 @@ class ModuloHistorial:
         self.var_hasta.set("")
         self.var_producto.set("")
         self.var_motivo.set("Todos")
+        self.var_tipo.set("Todos")
         self.cargar()
 
     def cargar(self):
@@ -161,7 +195,8 @@ class ModuloHistorial:
             return
 
         filas = consultar_historial(
-            desde, hasta, self.var_motivo.get(), self.var_producto.get()
+            desde, hasta, self.var_motivo.get(), self.var_producto.get(),
+            self.var_tipo.get()
         )
 
         self.tabla.delete(*self.tabla.get_children())
@@ -172,8 +207,9 @@ class ModuloHistorial:
                 f["fecha"][:16],
                 f["producto"],
                 f"{f['cantidad']:g} {f['unidad']}",
+                f["tipo"],
                 f["motivo"],
-                f["usuario"],
+                f["empleado"],
                 f"${f['costo_total']:,.2f}",
             ))
             self.registros[iid] = f
@@ -193,8 +229,10 @@ class ModuloHistorial:
             f"Fecha: {f['fecha'][:16]}\n"
             f"Producto: {f['producto']}\n"
             f"Cantidad: {f['cantidad']:g} {f['unidad']}\n"
+            f"Tipo de merma: {f['tipo']}\n"
             f"Motivo: {f['motivo']}\n"
             f"Costo: ${f['costo_total']:,.2f}\n"
-            f"Registró: {f['usuario']}\n\n"
+            f"Empleado: {f['empleado']}\n"
+            f"Capturó en el sistema: {f['usuario']}\n\n"
             f"Observaciones: {f['observaciones'] or 'Sin observaciones'}"
         )

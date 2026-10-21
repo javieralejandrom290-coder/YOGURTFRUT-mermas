@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import date, datetime
 
-from base_datos import obtener_conexion
+from base_datos import obtener_conexion, registrar_movimiento_inventario
 
 
 class RegistrarMermaView:
@@ -24,6 +24,8 @@ class RegistrarMermaView:
         # app = instancia de DashboardApp (de ahí tomamos colores, usuario, etc.)
         self.app = app
         self.productos = {}
+        self.tipos_merma = {}
+        self.empleados = {}
 
     # ------------------------------------------------------------------
     # Pantalla principal
@@ -63,7 +65,21 @@ class RegistrarMermaView:
                 ORDER BY nombre
                 """
             ).fetchall()
-        self.productos = {fila["nombre"]: fila for fila in filas}
+            self.productos = {fila["nombre"]: fila for fila in filas}
+
+            self.tipos_merma = {
+                fila["nombre"]: fila["id"]
+                for fila in conexion.execute(
+                    "SELECT id, nombre FROM tipos_merma ORDER BY id"
+                )
+            }
+            self.empleados = {
+                f"{fila['nombre']} ({fila['turno']})": fila["id"]
+                for fila in conexion.execute(
+                    "SELECT id, nombre, turno FROM empleados "
+                    "WHERE activo = 1 ORDER BY nombre"
+                )
+            }
 
     # ------------------------------------------------------------------
     # Formulario
@@ -126,6 +142,8 @@ class RegistrarMermaView:
         self.var_producto = tk.StringVar()
         self.var_cantidad = tk.StringVar()
         self.var_motivo = tk.StringVar()
+        self.var_tipo = tk.StringVar()
+        self.var_empleado = tk.StringVar()
         self.var_fecha = tk.StringVar(value=date.today().isoformat())
 
         # Fila 1: producto y cantidad
@@ -155,9 +173,35 @@ class RegistrarMermaView:
             "write", lambda *args: self.actualizar_resumen()
         )
 
-        # Fila 2: motivo y fecha
-        self.etiqueta(form, "MOTIVO", 2, 0, padx=(0, 10))
-        self.etiqueta(form, "FECHA (AAAA-MM-DD)", 2, 1, padx=(10, 0))
+        # Fila 2: tipo de merma y empleado
+        self.etiqueta(form, "TIPO DE MERMA", 2, 0, padx=(0, 10))
+        self.etiqueta(form, "EMPLEADO QUE LA REPORTA", 2, 1, padx=(10, 0))
+
+        self.cb_tipo = ttk.Combobox(
+            form,
+            textvariable=self.var_tipo,
+            values=list(self.tipos_merma.keys()),
+            state="readonly",
+            font=("Segoe UI", 11)
+        )
+        self.cb_tipo.grid(
+            row=3, column=0, sticky="ew", padx=(0, 10), ipady=5
+        )
+
+        self.cb_empleado = ttk.Combobox(
+            form,
+            textvariable=self.var_empleado,
+            values=list(self.empleados.keys()),
+            state="readonly",
+            font=("Segoe UI", 11)
+        )
+        self.cb_empleado.grid(
+            row=3, column=1, sticky="ew", padx=(10, 0), ipady=5
+        )
+
+        # Fila 3: motivo (causa) y fecha
+        self.etiqueta(form, "MOTIVO (CAUSA)", 4, 0, padx=(0, 10))
+        self.etiqueta(form, "FECHA (AAAA-MM-DD)", 4, 1, padx=(10, 0))
 
         self.cb_motivo = ttk.Combobox(
             form,
@@ -167,20 +211,20 @@ class RegistrarMermaView:
             font=("Segoe UI", 11)
         )
         self.cb_motivo.grid(
-            row=3, column=0, sticky="ew", padx=(0, 10), ipady=5
+            row=5, column=0, sticky="ew", padx=(0, 10), ipady=5
         )
 
         entrada_fecha = self.crear_entrada(form, self.var_fecha)
         entrada_fecha.grid(
-            row=3, column=1, sticky="ew", padx=(10, 0), ipady=6
+            row=5, column=1, sticky="ew", padx=(10, 0), ipady=6
         )
 
-        # Fila 3: observaciones
-        self.etiqueta(form, "OBSERVACIONES (opcional)", 4, 0, columnspan=2)
+        # Fila 4: observaciones
+        self.etiqueta(form, "OBSERVACIONES (opcional)", 6, 0, columnspan=2)
 
         self.txt_observaciones = tk.Text(
             form,
-            height=3,
+            height=2,
             font=("Segoe UI", 11),
             relief="flat",
             bd=0,
@@ -192,12 +236,12 @@ class RegistrarMermaView:
             highlightcolor=app.VERDE_CLARO
         )
         self.txt_observaciones.grid(
-            row=5, column=0, columnspan=2, sticky="ew"
+            row=7, column=0, columnspan=2, sticky="ew"
         )
 
         # Botones
         botones = tk.Frame(form, bg=app.BLANCO)
-        botones.grid(row=6, column=0, columnspan=2, sticky="ew", pady=(18, 0))
+        botones.grid(row=8, column=0, columnspan=2, sticky="ew", pady=(14, 0))
         botones.columnconfigure(0, weight=3)
         botones.columnconfigure(1, weight=1)
 
@@ -325,20 +369,22 @@ class RegistrarMermaView:
         )
         tabla_frame.pack(fill="both", expand=True, padx=30, pady=(0, 22))
 
-        columnas = ("fecha", "producto", "cantidad", "motivo", "costo")
+        columnas = ("fecha", "producto", "cantidad", "tipo", "motivo", "costo")
         encabezados = {
             "fecha": "Fecha",
             "producto": "Producto",
             "cantidad": "Cantidad",
+            "tipo": "Tipo",
             "motivo": "Motivo",
             "costo": "Costo"
         }
         anchos = {
-            "fecha": 150,
-            "producto": 180,
-            "cantidad": 100,
-            "motivo": 180,
-            "costo": 120
+            "fecha": 140,
+            "producto": 160,
+            "cantidad": 90,
+            "tipo": 110,
+            "motivo": 160,
+            "costo": 100
         }
 
         self.tabla = ttk.Treeview(
@@ -377,10 +423,12 @@ class RegistrarMermaView:
                         p.nombre AS producto,
                         m.cantidad,
                         p.unidad,
+                        COALESCE(t.nombre, '—') AS tipo,
                         m.motivo,
                         m.costo_total
                     FROM mermas m
                     INNER JOIN productos p ON p.id = m.producto_id
+                    LEFT JOIN tipos_merma t ON t.id = m.tipo_merma_id
                     ORDER BY m.id DESC
                     LIMIT 10
                     """
@@ -401,6 +449,7 @@ class RegistrarMermaView:
                     registro["fecha"],
                     registro["producto"],
                     f"{registro['cantidad']:g} {registro['unidad']}",
+                    registro["tipo"],
                     registro["motivo"],
                     f"${registro['costo_total']:,.2f}"
                 )
@@ -454,6 +503,8 @@ class RegistrarMermaView:
         self.var_producto.set("")
         self.var_cantidad.set("")
         self.var_motivo.set("")
+        self.var_tipo.set("")
+        self.var_empleado.set("")
         self.var_fecha.set(date.today().isoformat())
         self.txt_observaciones.delete("1.0", "end")
         self.actualizar_resumen()
@@ -484,6 +535,24 @@ class RegistrarMermaView:
             messagebox.showwarning(
                 "Cantidad inválida",
                 "Escribe una cantidad numérica mayor a 0.",
+                parent=padre
+            )
+            return
+
+        tipo_merma_id = self.tipos_merma.get(self.var_tipo.get())
+        if not tipo_merma_id:
+            messagebox.showwarning(
+                "Falta el tipo", "Selecciona el tipo de merma.",
+                parent=padre
+            )
+            return
+
+        empleado_id = self.empleados.get(self.var_empleado.get())
+        if not empleado_id:
+            messagebox.showwarning(
+                "Falta el empleado",
+                "Selecciona el empleado que reporta la merma. Si no hay, "
+                "agrégalo en el apartado Empleados.",
                 parent=padre
             )
             return
@@ -545,14 +614,16 @@ class RegistrarMermaView:
                 conexion.execute(
                     """
                     INSERT INTO mermas (
-                        producto_id, usuario_id, cantidad, motivo,
-                        observaciones, costo_total, fecha
+                        producto_id, usuario_id, empleado_id, tipo_merma_id,
+                        cantidad, motivo, observaciones, costo_total, fecha
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         producto["id"],
                         app.usuario_id,
+                        empleado_id,
+                        tipo_merma_id,
                         cantidad,
                         motivo,
                         observaciones,
@@ -568,6 +639,10 @@ class RegistrarMermaView:
                     WHERE id = ?
                     """,
                     (cantidad, producto["id"])
+                )
+
+                registrar_movimiento_inventario(
+                    conexion, producto["id"], salida=cantidad
                 )
         except Exception as error:
             messagebox.showerror(

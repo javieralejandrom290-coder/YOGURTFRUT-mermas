@@ -2,10 +2,8 @@
 import tkinter as tk
 from tkinter import messagebox
 import sqlite3
-import hashlib
-import hmac
-import secrets
 
+import seguridad
 from base_datos import obtener_conexion, inicializar_base_datos
 
 
@@ -23,31 +21,9 @@ class LoginApp:
     # --------------------------------------------------
     # SEGURIDAD DE CONTRASEÑAS
     # --------------------------------------------------
-    @staticmethod
-    def generar_hash(contrasena, salt=None):
-        if salt is None:
-            salt = secrets.token_hex(16)
-
-        resultado = hashlib.pbkdf2_hmac(
-            "sha256",
-            contrasena.encode("utf-8"),
-            bytes.fromhex(salt),
-            600_000
-        )
-
-        return f"{salt}${resultado.hex()}"
-
-    @staticmethod
-    def verificar_hash(contrasena, hash_guardado):
-        try:
-            salt, hash_original = hash_guardado.split("$", 1)
-            hash_nuevo = LoginApp.generar_hash(contrasena, salt)
-            return hmac.compare_digest(
-                hash_nuevo.split("$", 1)[1],
-                hash_original
-            )
-        except (ValueError, TypeError):
-            return False
+    # La lógica está en seguridad.py para usarla también en otros módulos
+    generar_hash = staticmethod(seguridad.generar_hash)
+    verificar_hash = staticmethod(seguridad.verificar_hash)
 
     # --------------------------------------------------
     # CREAR EL PRIMER ADMINISTRADOR

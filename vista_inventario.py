@@ -1,7 +1,7 @@
 import tkinter as tk
 
 from base_datos import obtener_conexion
-from ui_comunes import crear_tabla, crear_tarjeta_resumen
+from ui_comunes import crear_boton, crear_tabla, crear_tarjeta_resumen
 
 
 def estado_stock(existencia, stock_minimo):
@@ -45,6 +45,23 @@ def consultar_inventario(busqueda="", solo_alertas=False):
     return resultado
 
 
+def consultar_movimientos(busqueda=""):
+    """Registros diarios de inventario: stock inicial, entradas, salidas y final."""
+    with obtener_conexion() as conexion:
+        return conexion.execute(
+            """
+            SELECT i.fecha, p.nombre AS producto, p.unidad,
+                   i.stock_inicial, i.entradas, i.salidas, i.stock_final
+            FROM inventario i
+            JOIN productos p ON p.id = i.producto_id
+            WHERE p.nombre LIKE ?
+            ORDER BY i.fecha DESC, p.nombre
+            LIMIT 500
+            """,
+            (f"%{busqueda.strip()}%",)
+        ).fetchall()
+
+
 class ModuloInventario:
     """Apartado Inventario: existencias, valor y alertas de stock."""
 
@@ -63,7 +80,7 @@ class ModuloInventario:
         d.limpiar_contenido()
         d.titulo_pagina(
             "Inventario",
-            "Consulta las existencias de los productos."
+            "Consulta las existencias y los movimientos diarios de los productos."
         )
 
         # Tarjetas de resumen
@@ -98,15 +115,40 @@ class ModuloInventario:
         entrada.pack(side="left", padx=(8, 12), ipady=4)
         entrada.bind("<KeyRelease>", lambda e: self.cargar())
 
-        tk.Checkbutton(
+        self.check_alertas = tk.Checkbutton(
             barra, text="Solo productos con alerta",
             variable=self.solo_alertas, command=self.cargar,
             font=("Segoe UI", 10), bg=d.FONDO, fg=d.TEXTO,
             activebackground=d.FONDO, cursor="hand2"
-        ).pack(side="left")
+        )
+        self.check_alertas.pack(side="left")
 
-        # Tabla
-        marco, self.tabla = crear_tabla(d, self.contenido, [
+        # Selector de vista: existencias actuales o movimientos por día
+        self.boton_movimientos = crear_boton(
+            d, barra, "Movimientos por día",
+            lambda: self.cambiar_vista("movimientos")
+        )
+        self.boton_movimientos.pack(side="right")
+        self.boton_existencias = crear_boton(
+            d, barra, "Existencias actuales",
+            lambda: self.cambiar_vista("existencias")
+        )
+        self.boton_existencias.pack(side="right", padx=8)
+
+        # Tabla de movimientos (tabla inventario del modelo)
+        self.marco_movimientos, self.tabla_movimientos = crear_tabla(
+            d, self.contenido, [
+                ("fecha", "Fecha", 110, "w"),
+                ("producto", "Producto", 210, "w"),
+                ("stock_inicial", "Stock inicial", 120, "center"),
+                ("entradas", "Entradas", 105, "center"),
+                ("salidas", "Salidas", 105, "center"),
+                ("stock_final", "Stock final", 120, "center"),
+            ]
+        )
+
+        # Tabla de existencias
+        self.marco_existencias, self.tabla = crear_tabla(d, self.contenido, [
             ("nombre", "Producto", 210, "w"),
             ("categoria", "Categoría", 150, "w"),
             ("unidad", "Unidad", 80, "center"),
@@ -115,14 +157,59 @@ class ModuloInventario:
             ("valor", "Valor", 110, "e"),
             ("estado", "Estado", 90, "center"),
         ])
-        marco.pack(fill="both", expand=True, padx=30, pady=(0, 20))
 
         self.tabla.tag_configure("bajo", background="#FFF4E0")
         self.tabla.tag_configure("agotado", background="#FDECEA")
 
+        self.cambiar_vista("existencias")
+
+    def cambiar_vista(self, vista):
+        d = self.dashboard
+        self.vista = vista
+        en_existencias = vista == "existencias"
+
+        self.marco_existencias.pack_forget()
+        self.marco_movimientos.pack_forget()
+        marco = self.marco_existencias if en_existencias else self.marco_movimientos
+        marco.pack(fill="both", expand=True, padx=30, pady=(0, 20))
+
+        # Resalta el botón de la vista activa
+        for boton, activo in (
+            (self.boton_existencias, en_existencias),
+            (self.boton_movimientos, not en_existencias),
+        ):
+            boton.configure(
+                bg=d.VERDE_CLARO if activo else d.BLANCO,
+                fg=d.BLANCO if activo else d.VERDE_OSCURO,
+                highlightthickness=0 if activo else 1
+            )
+
+        self.check_alertas.configure(
+            state="normal" if en_existencias else "disabled"
+        )
         self.cargar()
 
     def cargar(self):
+        if getattr(self, "vista", "existencias") == "movimientos":
+            self.cargar_movimientos()
+        else:
+            self.cargar_existencias()
+
+    def cargar_movimientos(self):
+        self.tabla_movimientos.delete(*self.tabla_movimientos.get_children())
+
+        for m in consultar_movimientos(self.busqueda.get()):
+            unidad = m["unidad"]
+            self.tabla_movimientos.insert("", "end", values=(
+                m["fecha"],
+                m["producto"],
+                f"{m['stock_inicial']:g} {unidad}",
+                f"+{m['entradas']:g}" if m["entradas"] else "0",
+                f"-{m['salidas']:g}" if m["salidas"] else "0",
+                f"{m['stock_final']:g} {unidad}",
+            ))
+
+    def cargar_existencias(self):
         self.tabla.delete(*self.tabla.get_children())
 
         # Los totales se calculan sobre todos los productos activos,
