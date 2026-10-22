@@ -81,4 +81,5 @@ Desde el apartado **Usuarios** (solo visible para administradores) se pueden cre
 | `seguridad.py` | Cifrado y verificación de contraseñas |
 | `datos_prueba.py` | Genera la base de prueba `mermas_prueba.db` con datos falsos |
 | `ui_comunes.py` | Botones, tablas y tarjetas compartidas por los apartados |
+| `ui_graficas.py` | Gráficas de barras y de línea dibujadas con Canvas (Reportes y Panel principal) |
 | `asignar_rol.py` | Script para asignar el rol de Gerente a un usuario |
