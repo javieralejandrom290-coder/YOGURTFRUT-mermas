@@ -22,7 +22,7 @@ class DashboardApp:
         self.nombre = nombre
         self.rol = rol
 
-        titulo = "YOGURTFRUT | Control de Mermas"
+        titulo = "YOGUFRUT | Control de Mermas"
         if base_datos.RUTA_BASE_DATOS.name != "mermas.db":
             titulo += "  [BASE DE PRUEBA]"
         self.root.title(titulo)
@@ -30,16 +30,16 @@ class DashboardApp:
         self.root.minsize(1000, 620)
         self.root.configure(bg="#F3F6F4")
 
-        
-        self.VERDE_OSCURO = "#173B32"
-        self.VERDE_HOVER = "#245747"
+        # Tonos ajustados para que el menú lateral combine con el verde superior
+        self.VERDE_OSCURO = "#0F2A22"
+        self.VERDE_HOVER = "#1B4D3E"
         self.VERDE_CLARO = "#7CB342"
         self.VERDE_SUAVE = "#E8F3E5"
         self.BLANCO = "#FFFFFF"
         self.FONDO = "#F3F6F4"
         self.TEXTO = "#263238"
-        self.TEXTO_SECUNDARIO = "#78909C"
-        self.BORDE = "#E0E6E3"
+        self.TEXTO_SECUNDARIO = "#546E7A"
+        self.BORDE = "#CFD8DC"
 
         self.configurar_estilos()
         self.crear_menu_lateral()
@@ -49,7 +49,6 @@ class DashboardApp:
 
         self.mostrar_inicio()
 
-    
     def configurar_estilos(self):
         estilo = ttk.Style()
         estilo.theme_use("clam")
@@ -79,7 +78,6 @@ class DashboardApp:
             foreground=[("selected", self.VERDE_OSCURO)]
         )
 
-    
     def crear_menu_lateral(self):
         self.menu = tk.Frame(
             self.root,
@@ -91,7 +89,7 @@ class DashboardApp:
 
         tk.Label(
             self.menu,
-            text="YOGURTFRUT",
+            text="YOGUFRUT",
             font=("Segoe UI", 22, "bold"),
             bg=self.VERDE_OSCURO,
             fg=self.BLANCO
@@ -102,7 +100,7 @@ class DashboardApp:
             text="CONTROL DE MERMAS",
             font=("Segoe UI", 9, "bold"),
             bg=self.VERDE_OSCURO,
-            fg="#B9D8A5"
+            fg="#A5D6A7"
         ).pack(pady=(0, 30))
 
         opciones = [
@@ -126,9 +124,9 @@ class DashboardApp:
         for icono, texto, comando in opciones:
             boton = tk.Button(
                 self.menu,
-                text=f"  {icono}     {texto}",
+                text=f"  {icono}    {texto}",
                 command=comando,
-                font=("Segoe UI", 11),
+                font=("Segoe UI", 11, "bold"),
                 anchor="w",
                 bg=self.VERDE_OSCURO,
                 fg=self.BLANCO,
@@ -154,10 +152,9 @@ class DashboardApp:
                     b.configure(bg=self.VERDE_OSCURO)
             )
 
-        
         separador = tk.Frame(
             self.menu,
-            bg="#416358",
+            bg="#2C5E4B",
             height=1
         )
         separador.pack(side="bottom", fill="x", padx=18, pady=(0, 10))
@@ -177,11 +174,10 @@ class DashboardApp:
             text=f"  {self.rol}",
             font=("Segoe UI", 9),
             bg=self.VERDE_OSCURO,
-            fg="#B9D8A5",
+            fg="#A5D6A7",
             anchor="w"
         ).pack(side="bottom", anchor="w", padx=15, pady=(0, 15))
 
-    
     def crear_contenido(self):
         self.contenido = tk.Frame(
             self.root,
@@ -287,7 +283,7 @@ class DashboardApp:
         tk.Label(
             tarjeta,
             text=titulo,
-            font=("Segoe UI", 10),
+            font=("Segoe UI", 10, "bold"),
             bg=self.BLANCO,
             fg=self.TEXTO_SECUNDARIO
         ).pack(anchor="w", padx=16, pady=(15, 5))
@@ -314,7 +310,7 @@ class DashboardApp:
         self.limpiar_contenido()
         self.titulo_pagina(
             "Panel principal",
-            f"Bienvenido, {self.nombre}. Aquí tienes el resumen de YOGURTFRUT."
+            f"Bienvenido, {self.nombre}. Aquí tienes el resumen de YOGUFRUT."
         )
 
         try:
@@ -369,7 +365,6 @@ class DashboardApp:
             )
             tarjetas.columnconfigure(indice, weight=1)
 
-        
         tk.Label(
             self.contenido,
             text="Últimas mermas registradas",
@@ -474,7 +469,6 @@ class DashboardApp:
                 fg=self.TEXTO_SECUNDARIO
             ).place(relx=0.5, rely=0.5, anchor="center")
 
-    
     def mostrar_modulo_pendiente(self, titulo, descripcion):
         self.limpiar_contenido()
         self.titulo_pagina(titulo, descripcion)
