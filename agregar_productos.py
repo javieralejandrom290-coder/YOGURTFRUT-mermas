@@ -2,89 +2,90 @@ import sqlite3
 import sys
 import pathlib
 
-# Asegurar import de base_datos
 ruta_raiz = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(ruta_raiz))
 
 import base_datos
 
-productos_a_insertar = [
-    # (nombre, categoria, unidad, costo_unitario, existencia, stock_minimo)
-    ("Yogurt Natural", "Bases de yogur", "L", 0.0, 0.0, 0.0),
-    ("Fresa", "Frutas", "kg", 0.0, 0.0, 0.0),
-    ("Mango", "Frutas", "kg", 0.0, 0.0, 0.0),
-    ("Kiwi", "Frutas", "kg", 0.0, 0.0, 0.0),
-    ("Uva", "Frutas", "kg", 0.0, 0.0, 0.0),
-    ("Blueberry", "Frutas", "kg", 0.0, 0.0, 0.0),
-    ("Brownie", "Toppings", "pza", 0.0, 0.0, 0.0),
-    ("Pay de Queso", "Toppings", "pza", 0.0, 0.0, 0.0),
-    ("Pay de Manzana", "Toppings", "pza", 0.0, 0.0, 0.0),
-    ("Frambuesa", "Frutas", "kg", 0.0, 0.0, 0.0),
-    ("Granola", "Toppings", "kg", 0.0, 0.0, 0.0),
-    ("Coco Tostado", "Toppings", "kg", 0.0, 0.0, 0.0),
-    ("Lotus", "Toppings", "pza", 0.0, 0.0, 0.0),
-    ("Almendras", "Toppings", "kg", 0.0, 0.0, 0.0),
-    ("Chispas de Taro", "Toppings", "kg", 0.0, 0.0, 0.0),
-    ("Amaranto", "Toppings", "kg", 0.0, 0.0, 0.0),
-    ("Nugs", "Toppings", "kg", 0.0, 0.0, 0.0),
-    ("Mazapan", "Toppings", "pza", 0.0, 0.0, 0.0),
-    ("Cajeta", "Salsas y jarabes", "L", 0.0, 0.0, 0.0),
-    ("Panditas", "Toppings", "kg", 0.0, 0.0, 0.0),
-    ("Kranky", "Toppings", "kg", 0.0, 0.0, 0.0),
-    ("Lechera", "Salsas y jarabes", "L", 0.0, 0.0, 0.0),
-    ("Carnation", "Salsas y jarabes", "L", 0.0, 0.0, 0.0),
-    ("Cobertura", "Salsas y jarabes", "kg", 0.0, 0.0, 0.0),
-    ("Etiqueta", "Empaques", "pza", 0.0, 0.0, 0.0),
-    ("M&M's", "Toppings", "kg", 0.0, 0.0, 0.0),
-    ("Mermelada de Piña", "Salsas y jarabes", "kg", 0.0, 0.0, 0.0),
-    ("Mermelada de Fresa", "Salsas y jarabes", "kg", 0.0, 0.0, 0.0),
-    ("Mermelada de Zarzamora", "Salsas y jarabes", "kg", 0.0, 0.0, 0.0),
-    ("Durazno", "Frutas", "kg", 0.0, 0.0, 0.0),
-    ("Cerezas", "Frutas", "kg", 0.0, 0.0, 0.0),
-    ("Bubulubu mini", "Toppings", "pza", 0.0, 0.0, 0.0),
+productos_datos = [
+    # (nombre_antiguo, nuevo_nombre, categoria, unidad, costo_unitario)
+    ("Yogurt Natural", "Yogurt Natural", "Bases de yogur", "kg", 50.00),
+    ("Fresa", "Fresa", "Frutas", "kg", 70.00),
+    ("Mango", "Mango", "Frutas", "kg", 40.00),
+    ("Kiwi", "Kiwi", "Frutas", "kg", 90.00),
+    ("Uva", "Uva", "Frutas", "kg", 80.00),
+    ("Blueberry", "Blueberry", "Frutas", "kg", 200.00),
+    ("Brownie", "Brownie", "Toppings", "pz", 15.00),
+    ("Pay de Queso", "Pay de Queso", "Toppings", "pz", 25.00),
+    ("Pay de Manzana", "Pay de Manzana", "Toppings", "pz", 25.00),
+    ("Frambuesa", "Frambuesa", "Frutas", "kg", 220.00),
+    ("Granola", "Granola", "Toppings", "kg", 80.00),
+    ("Coco Tostado", "Coco Tostado", "Toppings", "kg", 120.00),
+    ("Lotus", "Lotus (Paquete)", "Toppings", "pz", 130.00),
+    ("Almendras", "Almendras", "Toppings", "kg", 300.00),
+    ("Chispas de Taro", "Chispas de Taro", "Toppings", "kg", 180.00),
+    ("Amaranto", "Amaranto", "Toppings", "kg", 70.00),
+    ("Nugs", "Nugs (Cereal/Chocolate)", "Toppings", "kg", 140.00),
+    ("Mazapan", "Mazapan", "Toppings", "pz", 7.00),
+    ("Cajeta", "Cajeta", "Salsas y jarabes", "kg", 120.00),
+    ("Panditas", "Panditas", "Toppings", "kg", 90.00),
+    ("Kranky", "Kranky", "Toppings", "kg", 160.00),
+    ("Lechera", "Lechera (Lata)", "Salsas y jarabes", "pz", 30.00),
+    ("Carnation", "Carnation (Lata)", "Salsas y jarabes", "pz", 25.00),
+    ("Cobertura", "Cobertura de Chocolate", "Salsas y jarabes", "kg", 150.00),
+    ("Etiqueta", "Etiqueta", "Empaques", "pz", 1.00),
+    ("M&M's", "M&M's", "Toppings", "kg", 280.00),
+    ("Mermelada de Piña", "Mermelada de Piña", "Salsas y jarabes", "kg", 75.00),
+    ("Mermelada de Fresa", "Mermelada de Fresa", "Salsas y jarabes", "kg", 85.00),
+    ("Mermelada de Zarzamora", "Mermelada de Zarzamora", "Salsas y jarabes", "kg", 95.00),
+    ("Durazno", "Durazno (En almíbar)", "Frutas", "kg", 65.00),
+    ("Cerezas", "Cerezas (Frasco)", "Frutas", "kg", 180.00),
+    ("Bubulubu mini", "Bubulubu mini", "Toppings", "pz", 6.00),
 ]
 
-def agregar_productos():
+def actualizar_precios_y_productos():
     base_datos.inicializar_base_datos()
-    
+
     with base_datos.obtener_conexion() as conexion:
         cursor = conexion.cursor()
-        
-        # 1. Asegurar categorías
-        categorias = sorted(list(set(p[1] for p in productos_a_insertar)))
+
+        # Categorías
+        categorias = sorted(list(set(p[2] for p in productos_datos)))
         for cat in categorias:
             cursor.execute("INSERT OR IGNORE INTO categorias (nombre) VALUES (?)", (cat,))
-        
+
         cursor.execute("SELECT id, nombre FROM categorias")
         cat_map = {row["nombre"]: row["id"] for row in cursor.fetchall()}
-        
-        # 2. Insertar o actualizar productos
-        insertados = 0
+
         actualizados = 0
-        
-        for nombre, categoria, unidad, costo, existencia, stock_min in productos_a_insertar:
-            cat_id = cat_map.get(categoria)
-            
-            cursor.execute("SELECT id FROM productos WHERE nombre = ?", (nombre,))
-            existente = cursor.fetchone()
-            
-            if existente:
+        insertados = 0
+
+        for nombre_antiguo, nuevo_nombre, categoria, unidad, costo in productos_datos:
+            cat_id = cat_map[categoria]
+
+            # Buscar por nuevo_nombre o nombre_antiguo
+            cursor.execute(
+                "SELECT id FROM productos WHERE nombre = ? OR nombre = ?",
+                (nuevo_nombre, nombre_antiguo)
+            )
+            fila = cursor.fetchone()
+
+            if fila:
                 cursor.execute("""
                     UPDATE productos
-                    SET categoria_id = ?, unidad = ?, activo = 1
+                    SET nombre = ?, categoria_id = ?, unidad = ?, costo_unitario = ?, activo = 1
                     WHERE id = ?
-                """, (cat_id, unidad, existente["id"]))
+                """, (nuevo_nombre, cat_id, unidad, costo, fila["id"]))
                 actualizados += 1
             else:
                 cursor.execute("""
                     INSERT INTO productos (nombre, categoria_id, unidad, costo_unitario, existencia, stock_minimo, activo)
-                    VALUES (?, ?, ?, ?, ?, ?, 1)
-                """, (nombre, cat_id, unidad, costo, existencia, stock_min))
+                    VALUES (?, ?, ?, ?, 0.0, 0.0, 1)
+                """, (nuevo_nombre, cat_id, unidad, costo))
                 insertados += 1
-                
+
         conexion.commit()
-        print(f"Completado exitosamente: {insertados} productos insertados, {actualizados} actualizados.")
+        print(f"Precios actualizados: {actualizados} actualizados, {insertados} insertados.")
 
 if __name__ == "__main__":
-    agregar_productos()
-
+    actualizar_precios_y_productos()
