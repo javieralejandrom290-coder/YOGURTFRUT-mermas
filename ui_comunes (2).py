@@ -1,4 +1,3 @@
-
 import calendar
 import tkinter as tk
 from datetime import date, datetime
@@ -55,11 +54,7 @@ def crear_tabla(d, contenedor, columnas):
         tabla.heading(clave, text=encabezado)
         tabla.column(clave, width=ancho, anchor=alineacion)
 
-    barra = ttk.Scrollbar(
-        marco,
-        orient="vertical",
-        command=tabla.yview
-    )
+    barra = ttk.Scrollbar(marco, orient="vertical", command=tabla.yview)
     tabla.configure(yscrollcommand=barra.set)
 
     tabla.pack(
@@ -77,15 +72,11 @@ def crear_tabla(d, contenedor, columnas):
     )
 
     activar_filas_alternadas(tabla)
-
     return marco, tabla
 
 
 def activar_filas_alternadas(tabla, color="#F6F9F7"):
-    """
-    Pinta una fila sí y otra no.
-    Respeta las filas que ya tienen sus propias etiquetas de color.
-    """
+    """Aplica un color alterno a las filas que no tienen etiquetas propias."""
     tabla.tag_configure("zebra", background=color)
     insertar_original = tabla.insert
 
@@ -95,12 +86,7 @@ def activar_filas_alternadas(tabla, color="#F6F9F7"):
             if cantidad % 2 == 1:
                 opciones["tags"] = ("zebra",)
 
-        return insertar_original(
-            parent,
-            index,
-            iid=iid,
-            **opciones
-        )
+        return insertar_original(parent, index, iid=iid, **opciones)
 
     tabla.insert = insertar
 
@@ -209,7 +195,6 @@ class CalendarioFecha(tk.Toplevel):
 
     def boton(self, padre, texto, comando, **extra):
         d = self.d
-
         return tk.Button(
             padre,
             text=texto,
@@ -238,15 +223,13 @@ class CalendarioFecha(tk.Toplevel):
                 hijo.destroy()
 
         self.boton(
-            self.encabezado,
-            "‹",
+            self.encabezado, "‹",
             lambda: self.cambiar_mes(-1),
             width=3
         ).pack(side="left")
 
         self.boton(
-            self.encabezado,
-            "›",
+            self.encabezado, "›",
             lambda: self.cambiar_mes(1),
             width=3
         ).pack(side="right")
@@ -282,15 +265,9 @@ class CalendarioFecha(tk.Toplevel):
                 fecha = date(self.anio, self.mes, dia)
 
                 if fecha == self.seleccionada:
-                    estilo = {
-                        "bg": d.VERDE_CLARO,
-                        "fg": d.BLANCO
-                    }
+                    estilo = {"bg": d.VERDE_CLARO, "fg": d.BLANCO}
                 elif fecha == hoy:
-                    estilo = {
-                        "bg": d.VERDE_SUAVE,
-                        "fg": d.VERDE_OSCURO
-                    }
+                    estilo = {"bg": d.VERDE_SUAVE, "fg": d.VERDE_OSCURO}
                 else:
                     estilo = {}
 
@@ -378,10 +355,7 @@ def crear_campo_fecha(
         activebackground=d.VERDE_SUAVE,
         padx=8,
         command=lambda: CalendarioFecha(
-            d,
-            marco,
-            variable,
-            permitir_vacio
+            d, marco, variable, permitir_vacio
         )
     )
     boton.pack(side="right", fill="y")
