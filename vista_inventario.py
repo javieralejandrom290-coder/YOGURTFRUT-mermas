@@ -150,14 +150,13 @@ class ModuloInventario:
 
         # Tabla de existencias
         self.marco_existencias, self.tabla = crear_tabla(d, self.contenido, [
-            ("nombre", "Producto", 200, "w"),
-            ("categoria", "Categoría", 140, "w"),
-            ("unidad", "Unidad", 75, "center"),
-            ("precio", "Precio", 95, "e"),
-            ("existencia", "Existencia", 95, "center"),
-            ("stock_minimo", "Stock mínimo", 110, "center"),
-            ("valor", "Valor", 100, "e"),
-            ("estado", "Estado", 85, "center"),
+            ("nombre", "Producto", 220, "w"),
+            ("categoria", "Categoría", 160, "w"),
+            ("unidad", "Unidad", 85, "center"),
+            ("precio", "Precio", 110, "e"),
+            ("existencia", "Existencia", 110, "center"),
+            ("stock_minimo", "Stock mínimo", 125, "center"),
+            ("estado", "Estado", 95, "center"),
         ])
 
         self.tabla.tag_configure("bajo", background="#FFF4E0")
@@ -232,6 +231,5 @@ class ModuloInventario:
                 f"${p['precio']:,.2f}",
                 f"{p['existencia']:g}",
                 f"{p['stock_minimo']:g}",
-                f"${p['valor']:,.2f}",
                 p["estado"],
             ))
