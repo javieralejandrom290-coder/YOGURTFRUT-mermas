@@ -14,13 +14,13 @@ def crear_boton(d, contenedor, texto, comando, principal=False):
         contenedor,
         text=texto,
         command=comando,
+        relief="flat", 
+        borderwidth=0,
         font=("Segoe UI", 10, "bold"),
         bg=d.VERDE_CLARO if principal else d.BLANCO,
         fg=d.BLANCO if principal else d.VERDE_OSCURO,
         activebackground="#689F38" if principal else d.VERDE_SUAVE,
         activeforeground=d.BLANCO if principal else d.VERDE_OSCURO,
-        relief="flat",
-        bd=0,
         highlightbackground=d.BORDE,
         highlightthickness=0 if principal else 1,
         cursor="hand2",
@@ -30,11 +30,32 @@ def crear_boton(d, contenedor, texto, comando, principal=False):
 
 
 def crear_tabla(d, contenedor, columnas):
-    """
-    Crea una tabla con barra de desplazamiento.
-    columnas: lista de (clave, encabezado, ancho, alineacion).
-    Devuelve (marco, tabla).
-    """
+    print("¡DIBUJANDO TABLA MODERNA!") # Esto nos avisará en la terminal si funciona
+    
+    estilo = ttk.Style()
+    
+    # Le ponemos nombre "Custom.Treeview" para que nada lo bloquee
+    estilo.configure(
+        "Custom.Treeview",
+        background=d.BLANCO,
+        foreground="#333333",
+        rowheight=45,
+        fieldbackground=d.BLANCO,
+        borderwidth=0,
+        font=("Segoe UI", 11)
+    )
+    
+    estilo.configure(
+        "Custom.Treeview.Heading",
+        background="#E2E8F0",
+        foreground="#1E293B",
+        font=("Segoe UI", 12, "bold"),
+        borderwidth=0,
+        relief="flat"
+    )
+    estilo.map("Custom.Treeview.Heading", background=[('active', '#CBD5E1')])
+
+    # ... (aquí sigue tu código de marco = tk.Frame que ya tenías) ...
     marco = tk.Frame(
         contenedor,
         bg=d.BLANCO,
@@ -46,8 +67,8 @@ def crear_tabla(d, contenedor, columnas):
         marco,
         columns=[clave for clave, _, _, _ in columnas],
         show="headings",
-        style="Mermas.Treeview",
-        selectmode="browse"
+        style="Custom.Treeview",
+        
     )
 
     for clave, encabezado, ancho, alineacion in columnas:
@@ -91,36 +112,26 @@ def activar_filas_alternadas(tabla, color="#F6F9F7"):
     tabla.insert = insertar
 
 
-def crear_tarjeta_resumen(d, contenedor, titulo, variable):
-    """Tarjeta con un título pequeño y un valor grande ligado a un StringVar."""
-    tarjeta = tk.Frame(
-        contenedor,
-        bg=d.BLANCO,
-        highlightbackground=d.BORDE,
-        highlightthickness=1
-    )
+def crear_tarjeta_resumen(d, padre, titulo, variable):
+    tarjeta = tk.Frame(padre, bg=d.BLANCO, highlightbackground=d.BORDE, highlightthickness=1)
+    
+    # Línea verde superior
+    tk.Frame(tarjeta, bg=d.VERDE_OSCURO, height=4).pack(fill="x")
 
-    tk.Frame(
-        tarjeta,
-        bg=d.VERDE_CLARO,
-        height=4
-    ).pack(fill="x")
+    # Contenedor con padding para que respire el texto
+    contenido = tk.Frame(tarjeta, bg=d.BLANCO)
+    contenido.pack(fill="both", expand=True, padx=15, pady=15)
 
     tk.Label(
-        tarjeta,
-        text=titulo,
-        font=("Segoe UI", 9, "bold"),
-        bg=d.BLANCO,
-        fg=d.TEXTO_SECUNDARIO
-    ).pack(anchor="w", padx=16, pady=(12, 2))
+        contenido, text=titulo, font=("Segoe UI", 9, "bold"), 
+        bg=d.BLANCO, fg="#777777" # Gris medio para el título
+    ).pack(anchor="w")
 
     tk.Label(
-        tarjeta,
-        textvariable=variable,
-        font=("Segoe UI", 20, "bold"),
-        bg=d.BLANCO,
-        fg=d.VERDE_OSCURO
-    ).pack(anchor="w", padx=16, pady=(0, 14))
+        # Aquí usamos 'variable' para que coincida con el parámetro de tu función
+        contenido, textvariable=variable, font=("Segoe UI", 22, "bold"), 
+        bg=d.BLANCO, fg="#222222" # Casi negro para el número
+    ).pack(anchor="w", pady=(5, 0))
 
     return tarjeta
 
