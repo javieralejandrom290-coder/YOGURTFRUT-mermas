@@ -7,7 +7,7 @@ from ui_comunes import activar_filas_alternadas
 from base_datos import obtener_conexion, registrar_movimiento_inventario
 
 
-UNIDADES = ["kg", "g", "L", "ml", "pza", "caja", "bolsa"]
+UNIDADES = ["kg", "g", "L", "ml", "pza", "pz", "caja", "bolsa"]
 
 
 class ModuloProductos:
