@@ -3,6 +3,7 @@ import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox
 
+from ui_comunes import activar_filas_alternadas
 from base_datos import obtener_conexion, registrar_movimiento_inventario
 
 
@@ -56,8 +57,9 @@ class ModuloProductos:
     def crear_barra_acciones(self):
         d = self.dashboard
 
+        # Fila 1: búsqueda y filtro
         barra = tk.Frame(self.contenido, bg=d.FONDO)
-        barra.pack(fill="x", padx=30, pady=(0, 12))
+        barra.pack(fill="x", padx=30, pady=(0, 8))
 
         tk.Label(
             barra,
@@ -75,7 +77,7 @@ class ModuloProductos:
             bd=1,
             width=28
         )
-        entrada.pack(side="left", padx=(8, 12), ipady=4)
+        entrada.pack(side="left", padx=(8, 16), ipady=4)
         entrada.bind("<KeyRelease>", lambda evento: self.cargar_productos())
 
         tk.Checkbutton(
@@ -90,17 +92,21 @@ class ModuloProductos:
             cursor="hand2"
         ).pack(side="left")
 
-        self.crear_boton(
-            barra, "Activar / Desactivar", self.cambiar_estado
-        ).pack(side="right")
+        # Fila 2: acciones
+        acciones = tk.Frame(self.contenido, bg=d.FONDO)
+        acciones.pack(fill="x", padx=30, pady=(0, 12))
 
         self.crear_boton(
-            barra, "Editar", self.editar_producto
-        ).pack(side="right", padx=8)
+            acciones, "＋ Nuevo producto", self.nuevo_producto, principal=True
+        ).pack(side="left")
 
         self.crear_boton(
-            barra, "＋ Nuevo producto", self.nuevo_producto, principal=True
-        ).pack(side="right")
+            acciones, "Editar", self.editar_producto
+        ).pack(side="left", padx=8)
+
+        self.crear_boton(
+            acciones, "Activar / Desactivar", self.cambiar_estado
+        ).pack(side="left")
 
     def crear_tabla(self):
         d = self.dashboard
@@ -140,9 +146,9 @@ class ModuloProductos:
             "nombre": 200,
             "categoria": 150,
             "unidad": 80,
-            "costo": 120,
+            "costo": 135,
             "existencia": 100,
-            "stock_minimo": 110,
+            "stock_minimo": 125,
             "estado": 90
         }
 
@@ -155,6 +161,7 @@ class ModuloProductos:
             )
 
         self.tabla.tag_configure("stock_bajo", background="#FDECEA")
+        activar_filas_alternadas(self.tabla)
         self.tabla.tag_configure("inactivo", foreground=d.TEXTO_SECUNDARIO)
 
         barra = ttk.Scrollbar(
