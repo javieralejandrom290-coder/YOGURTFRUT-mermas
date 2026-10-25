@@ -8,13 +8,86 @@ import ui_tema
 
 
 # Componentes visuales compartidos por los apartados del dashboard.
-# Todos reciben el dashboard (d) para usar su misma paleta de colores.
+
+
+class Tarjeta(tk.Frame):
+    """Contenedor blanco con esquinas redondeadas y sombra suave.
+
+    El contenido se agrega a `tarjeta.cuerpo`. La tarjeta conserva el
+    comportamiento normal de un Frame (pack/grid/place) para no alterar
+    la composición de las pantallas.
+    """
+
+    def __init__(
+        self,
+        padre,
+        bg=ui_tema.BLANCO,
+        radio=ui_tema.RADIO_TARJETA,
+        sombra=True,
+        padding=ui_tema.ESPACIO_M,
+        **extra,
+    ):
+        self._fondo_padre = ui_tema._color_padre(padre)
+        super().__init__(
+            padre,
+            bg=self._fondo_padre,
+            highlightthickness=0,
+            bd=0,
+            **extra,
+        )
+        self._fondo_tarjeta = bg
+        self._radio = radio
+        self._sombra = sombra
+        self._padding = padding
+
+        self._canvas = tk.Canvas(
+            self, bg=self._fondo_padre, highlightthickness=0, bd=0
+        )
+        self._canvas.place(x=0, y=0, relwidth=1, relheight=1)
+
+        self.cuerpo = tk.Frame(self, bg=bg)
+        self.cuerpo.pack(
+            fill="both",
+            expand=True,
+            padx=padding,
+            pady=padding,
+        )
+
+        self.bind("<Configure>", self._redibujar)
+        self.after_idle(self._redibujar)
+
+    def _redibujar(self, _evento=None):
+        self._canvas.delete("all")
+        ancho = max(1, self.winfo_width())
+        alto = max(1, self.winfo_height())
+
+        if self._sombra:
+            ui_tema.rectangulo_redondeado(
+                self._canvas,
+                1, 4, ancho - 1, alto - 1,
+                radio=self._radio,
+                fill=ui_tema.SOMBRA_SUAVE,
+                outline="",
+            )
+
+        ui_tema.rectangulo_redondeado(
+            self._canvas,
+            1, 1, ancho - 1, alto - 3,
+            radio=self._radio,
+            fill=self._fondo_tarjeta,
+            outline=ui_tema.BORDE,
+            width=1,
+        )
 
 
 def crear_boton(d, contenedor, texto, comando, principal=False):
     """Botón pastel (principal) o blanco con borde (secundario)."""
     return ui_tema.boton(
-        contenedor, texto, comando, principal=principal
+        contenedor,
+        texto,
+        comando,
+        principal=principal,
+        fuente=ui_tema.fuente_texto(10, "bold"),
     )
 
 
@@ -24,19 +97,23 @@ def crear_tabla(d, contenedor, columnas):
         "Custom.Treeview",
         background=d.BLANCO,
         foreground=d.TEXTO,
-        rowheight=42,
+        rowheight=44,
         fieldbackground=d.BLANCO,
         borderwidth=0,
-        font=(ui_tema.FUENTE, 10),
+        relief="flat",
+        lightcolor=d.BLANCO,
+        darkcolor=d.BLANCO,
+        bordercolor=d.BLANCO,
+        font=ui_tema.fuente_texto(10),
     )
     estilo.configure(
         "Custom.Treeview.Heading",
         background=d.VERDE_SUAVE,
         foreground=d.VERDE_OSCURO,
-        font=(ui_tema.FUENTE, 10, "bold"),
+        font=ui_tema.fuente_titulo(9),
         borderwidth=0,
         relief="flat",
-        padding=(10, 10),
+        padding=(12, 12),
     )
     estilo.map("Custom.Treeview.Heading", background=[("active", d.VERDE_ACTIVO)])
     estilo.map(
@@ -45,15 +122,14 @@ def crear_tabla(d, contenedor, columnas):
         foreground=[("selected", d.VERDE_OSCURO)],
     )
 
-    marco = tk.Frame(
+    marco = Tarjeta(
         contenedor,
         bg=d.BLANCO,
-        highlightbackground=d.BORDE,
-        highlightthickness=1
+        padding=6,
     )
 
     tabla = ttk.Treeview(
-        marco,
+        marco.cuerpo,
         columns=[clave for clave, _, _, _ in columnas],
         show="headings",
         style="Custom.Treeview",
@@ -64,30 +140,53 @@ def crear_tabla(d, contenedor, columnas):
         tabla.column(clave, width=ancho, anchor=alineacion)
 
     barra = ttk.Scrollbar(
-        marco, orient="vertical", command=tabla.yview,
-        style="Tema.Vertical.TScrollbar"
+        marco.cuerpo,
+        orient="vertical",
+        command=tabla.yview,
+        style="Tema.Vertical.TScrollbar",
     )
     tabla.configure(yscrollcommand=barra.set)
 
+    claves = [clave for clave, _, _, _ in columnas]
+
+    def ajustar_columnas(_evento=None):
+        """Encoge las columnas si la ventana es más angosta que su suma."""
+        ancho = tabla.winfo_width()
+        if ancho <= 1:
+            return
+
+        total = sum(int(tabla.column(clave, "width")) for clave in claves)
+        if total <= ancho:
+            return
+
+        factor = ancho / total
+        for clave in claves:
+            actual = int(tabla.column(clave, "width"))
+            tabla.column(clave, width=max(40, int(actual * factor)))
+
+    tabla.bind("<Configure>", ajustar_columnas, add="+")
+
+    # La barra se reserva primero para que nunca desaparezca cuando la
+    # tabla ocupa todo el ancho disponible.
+    barra.pack(
+        side="right",
+        fill="y",
+        padx=(0, 2),
+        pady=2,
+    )
     tabla.pack(
         side="left",
         fill="both",
         expand=True,
-        padx=(8, 0),
-        pady=8
-    )
-    barra.pack(
-        side="right",
-        fill="y",
-        padx=(0, 8),
-        pady=8
+        padx=(2, 0),
+        pady=2,
     )
 
     activar_filas_alternadas(tabla)
     return marco, tabla
 
 
-def activar_filas_alternadas(tabla, color="#F7FCF9"):
+def activar_filas_alternadas(tabla, color=ui_tema.FILA_ALTERNA):
     """Aplica un color alterno a las filas que no tienen etiquetas propias."""
     tabla.tag_configure("zebra", background=color)
     insertar_original = tabla.insert
@@ -103,29 +202,76 @@ def activar_filas_alternadas(tabla, color="#F7FCF9"):
     tabla.insert = insertar
 
 
-def crear_tarjeta_resumen(d, padre, titulo, variable):
-    tarjeta = tk.Frame(
-        padre, bg=d.BLANCO,
-        highlightbackground=d.BORDE, highlightthickness=1
+def crear_kpi(
+    d,
+    padre,
+    titulo,
+    valor=None,
+    detalle="",
+    color=None,
+    variable=None,
+):
+    """Tarjeta KPI con acento de color, número grande y detalle."""
+    color = color or d.VERDE_CLARO
+    tarjeta = Tarjeta(padre, bg=d.BLANCO, padding=16)
+    cuerpo = tarjeta.cuerpo
+
+    tk.Frame(cuerpo, bg=color, height=4).pack(fill="x", pady=(0, 12))
+
+    fila_titulo = tk.Frame(cuerpo, bg=d.BLANCO)
+    fila_titulo.pack(fill="x")
+
+    punto = tk.Canvas(
+        fila_titulo, width=9, height=9, bg=d.BLANCO,
+        highlightthickness=0, bd=0,
     )
-
-    # Detalle pastel superior
-    tk.Frame(tarjeta, bg=d.VERDE_CLARO, height=4).pack(fill="x")
-
-    contenido = tk.Frame(tarjeta, bg=d.BLANCO)
-    contenido.pack(fill="both", expand=True, padx=18, pady=16)
+    punto.create_oval(0, 0, 9, 9, fill=color, outline="")
+    punto.pack(side="left", padx=(0, 8))
 
     tk.Label(
-        contenido, text=titulo, font=("Segoe UI", 8, "bold"),
-        bg=d.BLANCO, fg=d.TEXTO_SECUNDARIO
-    ).pack(anchor="w")
+        fila_titulo,
+        text=titulo,
+        font=ui_tema.fuente_texto(9, "bold"),
+        bg=d.BLANCO,
+        fg=d.TEXTO_SECUNDARIO,
+        anchor="w",
+    ).pack(side="left", fill="x", expand=True)
 
-    tk.Label(
-        contenido, textvariable=variable, font=("Segoe UI", 22, "bold"),
-        bg=d.BLANCO, fg=d.VERDE_OSCURO
-    ).pack(anchor="w", pady=(6, 0))
+    if variable is not None:
+        etiqueta_valor = tk.Label(
+            cuerpo,
+            textvariable=variable,
+            font=ui_tema.fuente_titulo(25),
+            bg=d.BLANCO,
+            fg=d.VERDE_OSCURO,
+            anchor="w",
+        )
+    else:
+        etiqueta_valor = tk.Label(
+            cuerpo,
+            text=valor or "—",
+            font=ui_tema.fuente_titulo(25),
+            bg=d.BLANCO,
+            fg=d.VERDE_OSCURO,
+            anchor="w",
+        )
+    etiqueta_valor.pack(anchor="w", pady=(10, 2))
+
+    if detalle:
+        tk.Label(
+            cuerpo,
+            text=detalle,
+            font=ui_tema.fuente_texto(8),
+            bg=d.BLANCO,
+            fg=d.TEXTO_SECUNDARIO,
+            anchor="w",
+        ).pack(anchor="w")
 
     return tarjeta
+
+
+def crear_tarjeta_resumen(d, padre, titulo, variable):
+    return crear_kpi(d, padre, titulo, variable=variable)
 
 
 # ----------------------------------------------------------------------
@@ -167,7 +313,7 @@ class CalendarioFecha(tk.Toplevel):
         self.configure(
             bg=d.BLANCO,
             highlightbackground=d.BORDE,
-            highlightthickness=1
+            highlightthickness=1,
         )
         self.resizable(False, False)
         self.transient(ancla.winfo_toplevel())
@@ -204,12 +350,14 @@ class CalendarioFecha(tk.Toplevel):
             command=comando,
             relief="flat",
             bd=0,
-            font=("Segoe UI", 10),
+            font=ui_tema.fuente_texto(10),
             bg=extra.pop("bg", d.BLANCO),
             fg=extra.pop("fg", d.TEXTO),
             cursor="hand2",
             activebackground=d.VERDE_SUAVE,
-            **extra
+            activeforeground=d.VERDE_OSCURO,
+            highlightthickness=0,
+            **extra,
         )
 
     def cambiar_mes(self, delta):
@@ -228,21 +376,21 @@ class CalendarioFecha(tk.Toplevel):
         self.boton(
             self.encabezado, "<",
             lambda: self.cambiar_mes(-1),
-            width=3
+            width=3,
         ).pack(side="left")
 
         self.boton(
             self.encabezado, ">",
             lambda: self.cambiar_mes(1),
-            width=3
+            width=3,
         ).pack(side="right")
 
         tk.Label(
             self.encabezado,
             text=f"{MESES[self.mes - 1]} {self.anio}",
-            font=("Segoe UI", 11, "bold"),
+            font=ui_tema.fuente_titulo(11),
             bg=d.BLANCO,
-            fg=d.VERDE_OSCURO
+            fg=d.VERDE_OSCURO,
         ).pack(expand=True)
 
         for columna, nombre in enumerate(DIAS_SEMANA):
@@ -250,9 +398,9 @@ class CalendarioFecha(tk.Toplevel):
                 self.cuadricula,
                 text=nombre,
                 width=4,
-                font=("Segoe UI", 9, "bold"),
+                font=ui_tema.fuente_texto(9, "bold"),
                 bg=d.BLANCO,
-                fg=d.TEXTO_SECUNDARIO
+                fg=d.TEXTO_SECUNDARIO,
             ).grid(row=0, column=columna, pady=(0, 2))
 
         hoy = date.today()
@@ -279,19 +427,19 @@ class CalendarioFecha(tk.Toplevel):
                     str(dia),
                     lambda f=fecha: self.elegir(f),
                     width=4,
-                    **estilo
+                    **estilo,
                 ).grid(
                     row=fila,
                     column=columna,
                     padx=1,
-                    pady=1
+                    pady=1,
                 )
 
         self.boton(
             self.pie,
             "Hoy",
             lambda: self.elegir(date.today()),
-            fg=d.VERDE_OSCURO
+            fg=d.VERDE_OSCURO,
         ).pack(side="left")
 
         if self.permitir_vacio:
@@ -299,7 +447,7 @@ class CalendarioFecha(tk.Toplevel):
                 self.pie,
                 "Borrar",
                 lambda: self.elegir(None),
-                fg=d.TEXTO_SECUNDARIO
+                fg=d.TEXTO_SECUNDARIO,
             ).pack(side="right")
 
     def elegir(self, fecha):
@@ -311,58 +459,37 @@ def crear_campo_fecha(
     d,
     padre,
     variable,
-    fuente=("Segoe UI", 11),
+    fuente=None,
     ancho=12,
-    permitir_vacio=False
+    permitir_vacio=False,
 ):
     """
     Campo de fecha AAAA-MM-DD con botón para abrir un calendario.
     Devuelve el marco para colocarlo con pack() o grid().
     """
-    marco = tk.Frame(
-        padre,
-        bg=d.BLANCO,
-        highlightbackground=d.BORDE,
-        highlightcolor=d.VERDE_CLARO,
-        highlightthickness=1
-    )
+    fuente = fuente or ui_tema.fuente_texto(11)
+    marco = tk.Frame(padre, bg=d.BLANCO)
 
-    entrada = tk.Entry(
+    entrada = ui_tema.entrada(
         marco,
         textvariable=variable,
         font=fuente,
         width=ancho,
-        relief="flat",
-        bd=0,
-        bg=d.BLANCO,
-        fg=d.TEXTO,
-        highlightthickness=0
     )
     entrada.pack(
         side="left",
         fill="x",
         expand=True,
-        padx=(8, 0),
-        ipady=5
+        padx=(0, 6),
     )
 
-    boton = tk.Button(
+    boton = ui_tema.boton(
         marco,
-        text="Elegir",
-        font=("Segoe UI", 8, "bold"),
-        relief="flat",
-        bd=0,
-        bg=d.BLANCO,
-        fg=d.VERDE_OSCURO,
-        activebackground=d.VERDE_SUAVE,
-        activeforeground=d.VERDE_OSCURO,
-        cursor="hand2",
-        padx=8,
-        command=lambda: CalendarioFecha(
-            d, marco, variable, permitir_vacio
-        )
+        "Elegir",
+        lambda: CalendarioFecha(d, marco, variable, permitir_vacio),
+        fuente=ui_tema.fuente_texto(8, "bold"),
     )
-    boton.pack(side="right", fill="y")
+    boton.pack(side="right")
 
     marco.entrada = entrada
     return marco
@@ -392,7 +519,7 @@ def buscar_logo():
 _CACHE_LOGOS = {}
 
 
-def crear_logo(padre, bg, alto=44, texto="YOGUFRUT", fg="#FFFFFF"):
+def crear_logo(padre, bg, alto=44, texto="YOGUFRUT", fg=ui_tema.VERDE_OSCURO):
     """
     Etiqueta con el logo, escalado a `alto` píxeles de alto.
     Si no hay archivo de logo (o no se puede leer), muestra el nombre
@@ -419,6 +546,9 @@ def crear_logo(padre, bg, alto=44, texto="YOGUFRUT", fg="#FFFFFF"):
             pass  # si algo falla, se usa el texto de respaldo
 
     return tk.Label(
-        padre, text=texto, font=("Segoe UI", 15, "bold"),
-        bg=bg, fg=fg
+        padre,
+        text=texto,
+        font=ui_tema.fuente_titulo(15),
+        bg=bg,
+        fg=fg,
     )

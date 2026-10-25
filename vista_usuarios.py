@@ -5,7 +5,7 @@ from tkinter import ttk, messagebox
 import seguridad
 import ui_tema
 from base_datos import obtener_conexion
-from ui_comunes import crear_boton, crear_tabla
+from ui_comunes import Tarjeta, crear_boton, crear_tabla
 
 
 ROLES = ["Administrador", "Gerente", "Empleado"]
@@ -52,7 +52,7 @@ class ModuloUsuarios:
         )
 
         barra = tk.Frame(self.contenido, bg=d.FONDO)
-        barra.pack(fill="x", padx=30, pady=(0, 12))
+        barra.pack(fill="x", padx=32, pady=(0, 14))
 
         crear_boton(
             d, barra, "Nuevo usuario", self.nuevo, principal=True
@@ -69,6 +69,13 @@ class ModuloUsuarios:
             d, barra, "Mi cuenta", self.mi_cuenta, principal=True
         ).pack(side="right")
 
+        tk.Label(
+            self.contenido,
+            text="Tu cuenta aparece en negritas. Los usuarios inactivos "
+                 "no pueden iniciar sesión.",
+            font=ui_tema.fuente_texto(9), bg=d.FONDO, fg=d.TEXTO_SECUNDARIO
+        ).pack(side="bottom", anchor="w", padx=32, pady=(0, 22))
+
         marco, self.tabla = crear_tabla(d, self.contenido, [
             ("nombre", "Nombre", 220, "w"),
             ("usuario", "Usuario", 160, "w"),
@@ -76,18 +83,11 @@ class ModuloUsuarios:
             ("estado", "Estado", 100, "center"),
             ("creado", "Creado", 150, "center"),
         ])
-        marco.pack(fill="both", expand=True, padx=30, pady=(0, 10))
+        marco.pack(fill="both", expand=True, padx=32, pady=(0, 12))
 
         self.tabla.tag_configure("inactivo", foreground=d.TEXTO_SECUNDARIO)
-        self.tabla.tag_configure("yo", font=("Segoe UI", 10, "bold"))
+        self.tabla.tag_configure("yo", font=ui_tema.fuente_texto(10, "bold"))
         self.tabla.bind("<Double-1>", lambda evento: self.editar())
-
-        tk.Label(
-            self.contenido,
-            text="Tu cuenta aparece en negritas. Los usuarios inactivos "
-                 "no pueden iniciar sesión.",
-            font=("Segoe UI", 9), bg=d.FONDO, fg=d.TEXTO_SECUNDARIO
-        ).pack(anchor="w", padx=30, pady=(0, 20))
 
         self.cargar()
 
@@ -146,46 +146,54 @@ class ModuloUsuarios:
         al_guardar(datos, ventana) devuelve True si se guardó.
         """
         d = self.dashboard
-        alto = 150 + 68 * len(campos)
+        alto = 230 + 76 * len(campos)
 
         ventana = tk.Toplevel(self.root)
         ventana.title(titulo)
         ventana.resizable(False, False)
-        ventana.configure(bg=d.BLANCO)
+        ventana.configure(bg=d.FONDO)
         ventana.transient(self.root)
         ventana.grab_set()
 
         ventana.update_idletasks()
-        x = (ventana.winfo_screenwidth() - 430) // 2
+        x = (ventana.winfo_screenwidth() - 440) // 2
         y = (ventana.winfo_screenheight() - alto) // 2
-        ventana.geometry(f"430x{alto}+{x}+{y}")
+        ventana.geometry(f"440x{alto}+{x}+{y}")
+
+        tarjeta = Tarjeta(ventana, bg=d.BLANCO, padding=24)
+        tarjeta.pack(fill="both", expand=True, padx=16, pady=16)
+        cuerpo = tarjeta.cuerpo
 
         tk.Label(
-            ventana, text=titulo, font=("Segoe UI", 17, "bold"),
+            cuerpo, text=titulo, font=ui_tema.fuente_titulo(18),
             bg=d.BLANCO, fg=d.VERDE_OSCURO
-        ).pack(pady=(22, 16))
+        ).pack(anchor="w")
+
+        tk.Frame(
+            cuerpo, bg=ui_tema.VERDE_MEDIO, height=3, width=46
+        ).pack(anchor="w", pady=(6, 16))
 
         entradas = {}
         for clave, etiqueta, tipo, inicial in campos:
             tk.Label(
-                ventana, text=etiqueta, font=("Segoe UI", 10, "bold"),
+                cuerpo, text=etiqueta, font=ui_tema.fuente_texto(10, "bold"),
                 bg=d.BLANCO, fg=d.TEXTO
-            ).pack(anchor="w", padx=45)
+            ).pack(anchor="w")
 
             if isinstance(tipo, list):
                 entrada = ttk.Combobox(
-                    ventana, values=tipo, state="readonly",
-                    font=("Segoe UI", 10), style="Tema.TCombobox"
+                    cuerpo, values=tipo, state="readonly",
+                    font=ui_tema.fuente_texto(10), style="Tema.TCombobox"
                 )
                 entrada.set(inicial or tipo[-1])
             else:
                 entrada = ui_tema.entrada(
-                    ventana, font=("Segoe UI", 10),
+                    cuerpo, font=ui_tema.fuente_texto(10),
                     show="*" if tipo == "contrasena" else ""
                 )
                 if inicial:
                     entrada.insert(0, inicial)
-            entrada.pack(fill="x", padx=45, pady=(4, 10))
+            entrada.pack(fill="x", pady=(4, 10))
             entradas[clave] = entrada
 
         entradas[campos[0][0]].focus_set()
@@ -203,8 +211,8 @@ class ModuloUsuarios:
                 self.cargar()
 
         ui_tema.boton(
-            ventana, texto_boton, guardar, principal=True
-        ).pack(fill="x", padx=45, pady=(8, 20))
+            cuerpo, texto_boton, guardar, principal=True
+        ).pack(fill="x", pady=(14, 0))
 
         ventana.bind("<Return>", lambda evento: guardar())
         return ventana

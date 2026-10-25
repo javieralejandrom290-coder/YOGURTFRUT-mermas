@@ -5,7 +5,7 @@ import sqlite3
 import seguridad
 import ui_tema
 from base_datos import obtener_conexion, inicializar_base_datos
-from ui_comunes import crear_logo
+from ui_comunes import Tarjeta, crear_logo
 
 
 class LoginApp:
@@ -50,36 +50,40 @@ class LoginApp:
     def crear_primer_administrador(self):
         ventana = tk.Toplevel(self.root)
         ventana.title("Configuración inicial")
-        ventana.geometry("470x520")
+        ventana.geometry("470x600")
         ventana.resizable(False, False)
-        ventana.configure(bg=ui_tema.BLANCO)
+        ventana.configure(bg=ui_tema.FONDO)
         ventana.transient(self.root)
         ventana.grab_set()
 
         ventana.update_idletasks()
         x = (ventana.winfo_screenwidth() - 470) // 2
-        y = (ventana.winfo_screenheight() - 520) // 2
-        ventana.geometry(f"470x520+{x}+{y}")
+        y = (ventana.winfo_screenheight() - 600) // 2
+        ventana.geometry(f"470x600+{x}+{y}")
 
-        crear_logo(ventana, bg=ui_tema.BLANCO, alto=58).pack(
-            pady=(22, 8)
+        tarjeta = Tarjeta(ventana, bg=ui_tema.BLANCO, padding=24)
+        tarjeta.pack(fill="both", expand=True, padx=16, pady=16)
+        cuerpo = tarjeta.cuerpo
+
+        crear_logo(cuerpo, bg=ui_tema.BLANCO, alto=56).pack(
+            anchor="w", pady=(0, 10)
         )
 
         tk.Label(
-            ventana,
+            cuerpo,
             text="Configuración inicial",
-            font=("Segoe UI", 18, "bold"),
+            font=ui_tema.fuente_titulo(20),
             bg=ui_tema.BLANCO,
             fg=ui_tema.VERDE_OSCURO
-        ).pack(pady=(0, 4))
+        ).pack(anchor="w", pady=(0, 4))
 
         tk.Label(
-            ventana,
+            cuerpo,
             text="Crea la cuenta del primer administrador",
-            font=("Segoe UI", 9),
+            font=ui_tema.fuente_texto(9),
             bg=ui_tema.BLANCO,
             fg=ui_tema.TEXTO_SECUNDARIO
-        ).pack(pady=(0, 16))
+        ).pack(anchor="w", pady=(0, 12))
 
         campos = {}
 
@@ -90,19 +94,19 @@ class LoginApp:
             ("Confirmar contraseña", "confirmar", True)
         ]:
             tk.Label(
-                ventana,
+                cuerpo,
                 text=etiqueta,
-                font=("Segoe UI", 9, "bold"),
+                font=ui_tema.fuente_texto(9, "bold"),
                 bg=ui_tema.BLANCO,
                 fg=ui_tema.TEXTO
-            ).pack(anchor="w", padx=45)
+            ).pack(anchor="w")
 
             entrada = ui_tema.entrada(
-                ventana,
-                font=("Segoe UI", 10),
+                cuerpo,
+                font=ui_tema.fuente_texto(10),
                 show="*" if ocultar else "",
             )
-            entrada.pack(fill="x", padx=45, pady=(3, 8), ipady=5)
+            entrada.pack(fill="x", pady=(3, 8))
             campos[clave] = entrada
 
         def guardar_administrador():
@@ -164,8 +168,9 @@ class LoginApp:
                 )
 
         ui_tema.boton(
-            ventana, "CREAR ADMINISTRADOR", guardar_administrador
-        ).pack(fill="x", padx=45, pady=(10, 20))
+            cuerpo, "CREAR ADMINISTRADOR", guardar_administrador,
+            principal=True
+        ).pack(fill="x", pady=(12, 0))
 
         ventana.protocol(
             "WM_DELETE_WINDOW",
@@ -192,7 +197,7 @@ class LoginApp:
     def crear_interfaz(self):
         # Panel de marca (izquierda)
         panel_izquierdo = tk.Frame(
-            self.root, width=430, bg=ui_tema.FONDO_SUAVE
+            self.root, width=430, bg=ui_tema.SIDEBAR
         )
         panel_izquierdo.pack(side="left", fill="y")
         panel_izquierdo.pack_propagate(False)
@@ -200,68 +205,61 @@ class LoginApp:
         # Detalles decorativos suaves
         fondo = tk.Canvas(
             panel_izquierdo,
-            bg=ui_tema.FONDO_SUAVE,
+            bg=ui_tema.SIDEBAR,
             highlightthickness=0,
         )
         fondo.place(x=0, y=0, relwidth=1, relheight=1)
         fondo.create_oval(
             -120, -140, 230, 210,
-            fill="#E1F2E8", outline=""
+            fill=ui_tema.DECORACION_1, outline=""
         )
         fondo.create_oval(
             260, 430, 540, 710,
-            fill="#DFF1E7", outline=""
+            fill=ui_tema.DECORACION_2, outline=""
         )
 
-        marca = tk.Frame(
-            panel_izquierdo,
-            bg=ui_tema.BLANCO,
-            highlightbackground=ui_tema.BORDE,
-            highlightthickness=1,
-        )
-        marca.place(relx=0.5, y=58, anchor="n", width=270, height=210)
-        marca.pack_propagate(False)
+        marca = Tarjeta(panel_izquierdo, bg=ui_tema.BLANCO, padding=14)
+        marca.place(relx=0.5, y=48, anchor="n", width=282, height=198)
 
-        crear_logo(marca, bg=ui_tema.BLANCO, alto=118).pack(
-            expand=True, pady=(16, 0)
+        crear_logo(marca.cuerpo, bg=ui_tema.BLANCO, alto=108).pack(
+            expand=True, pady=(4, 0)
         )
         tk.Label(
-            marca,
+            marca.cuerpo,
             text="CONTROL DE MERMAS",
-            font=("Segoe UI", 8, "bold"),
+            font=ui_tema.fuente_texto(8, "bold"),
             bg=ui_tema.BLANCO,
             fg=ui_tema.TEXTO_SECUNDARIO,
-        ).pack(pady=(0, 16))
+        ).pack(pady=(0, 8))
+
+        tk.Frame(
+            marca.cuerpo, bg=ui_tema.ACENTO, height=3, width=46
+        ).pack()
 
         tk.Label(
             panel_izquierdo,
             text="Un control simple para\ncuidar cada insumo.",
-            font=("Segoe UI", 20, "bold"),
-            bg=ui_tema.FONDO_SUAVE,
+            font=ui_tema.fuente_titulo(21),
+            bg=ui_tema.SIDEBAR,
             fg=ui_tema.VERDE_OSCURO,
             justify="center",
-        ).place(relx=0.5, y=320, anchor="n")
+        ).place(relx=0.5, y=286, anchor="n")
 
-        tarjeta = tk.Frame(
-            panel_izquierdo,
-            bg=ui_tema.BLANCO,
-            highlightbackground=ui_tema.BORDE,
-            highlightthickness=1,
-        )
-        tarjeta.place(relx=0.5, y=418, anchor="n", width=330, height=160)
+        tarjeta = Tarjeta(panel_izquierdo, bg=ui_tema.BLANCO, padding=14)
+        tarjeta.place(relx=0.5, y=400, anchor="n", width=342, height=174)
 
         for numero, titulo, detalle in [
             ("01", "Inventario en tiempo real", "Existencias siempre al día"),
             ("02", "Menos pérdidas", "Detecta mermas a tiempo"),
             ("03", "Decisiones claras", "Reportes fáciles de leer"),
         ]:
-            self._caracteristica(tarjeta, numero, titulo, detalle)
+            self._caracteristica(tarjeta.cuerpo, numero, titulo, detalle)
 
         tk.Label(
             panel_izquierdo,
             text="YOGUFRUT © 2026",
-            font=("Segoe UI", 8),
-            bg=ui_tema.FONDO_SUAVE,
+            font=ui_tema.fuente_texto(8),
+            bg=ui_tema.SIDEBAR,
             fg=ui_tema.TEXTO_SECUNDARIO,
         ).place(relx=0.5, rely=0.97, anchor="s")
 
@@ -269,102 +267,63 @@ class LoginApp:
         area_derecha = tk.Frame(self.root, bg=ui_tema.FONDO)
         area_derecha.pack(side="right", fill="both", expand=True)
 
-        card_width, card_height = 430, 500
-        card_login = tk.Frame(
-            area_derecha,
-            width=card_width,
-            height=card_height,
-            bg=ui_tema.BLANCO,
-            highlightbackground=ui_tema.BORDE,
-            highlightthickness=1,
-            bd=0,
+        card_login = Tarjeta(area_derecha, bg=ui_tema.BLANCO, padding=2)
+        card_login.place(
+            relx=0.5, rely=0.5, anchor="center", width=430, height=500
         )
-        card_login.place(relx=0.5, rely=0.5, anchor="center")
-        card_login.pack_propagate(False)
+        cuerpo = card_login.cuerpo
 
         tk.Label(
-            card_login,
+            cuerpo,
             text="Iniciar sesión",
-            font=("Segoe UI", 22, "bold"),
+            font=ui_tema.fuente_titulo(24),
             bg=ui_tema.BLANCO,
             fg=ui_tema.VERDE_OSCURO,
-        ).place(x=44, y=40)
+        ).pack(anchor="w", padx=34, pady=(26, 2))
 
         tk.Label(
-            card_login,
+            cuerpo,
             text="Ingresa tus credenciales para continuar.",
-            font=("Segoe UI", 9),
+            font=ui_tema.fuente_texto(9),
             bg=ui_tema.BLANCO,
             fg=ui_tema.TEXTO_SECUNDARIO,
-        ).place(x=44, y=78)
+        ).pack(anchor="w", padx=34)
 
-        tk.Frame(card_login, bg=ui_tema.BORDE, height=1).place(
-            x=44, y=112, width=342
+        tk.Frame(cuerpo, bg=ui_tema.BORDE, height=1).pack(
+            fill="x", padx=34, pady=(18, 18)
         )
 
         tk.Label(
-            card_login,
+            cuerpo,
             text="Usuario",
-            font=("Segoe UI", 9, "bold"),
+            font=ui_tema.fuente_texto(9, "bold"),
             bg=ui_tema.BLANCO,
             fg=ui_tema.TEXTO,
-        ).place(x=44, y=138)
+        ).pack(anchor="w", padx=34)
 
-        canvas_usr = tk.Canvas(
-            card_login, bg=ui_tema.BLANCO,
-            highlightthickness=0, height=44
+        self.entrada_usuario = ui_tema.entrada(
+            cuerpo,
+            font=ui_tema.fuente_texto(11),
         )
-        canvas_usr.place(x=44, y=162, width=342, height=44)
-        self._crear_rounded_rect(
-            canvas_usr, 0, 0, 342, 44, radius=14,
-            fill="#F7FBF8", outline=ui_tema.BORDE_FUERTE
-        )
-
-        self.entrada_usuario = tk.Entry(
-            canvas_usr,
-            font=("Segoe UI", 11),
-            relief="flat",
-            bd=0,
-            bg="#F7FBF8",
-            fg=ui_tema.TEXTO,
-            insertbackground=ui_tema.VERDE_OSCURO,
-            highlightthickness=0,
-        )
-        canvas_usr.create_window(
-            171, 22, window=self.entrada_usuario, width=310, height=28
+        self.entrada_usuario.pack(
+            fill="x", padx=34, pady=(5, 14)
         )
 
         tk.Label(
-            card_login,
+            cuerpo,
             text="Contraseña",
-            font=("Segoe UI", 9, "bold"),
+            font=ui_tema.fuente_texto(9, "bold"),
             bg=ui_tema.BLANCO,
             fg=ui_tema.TEXTO,
-        ).place(x=44, y=228)
+        ).pack(anchor="w", padx=34)
 
-        canvas_pwd = tk.Canvas(
-            card_login, bg=ui_tema.BLANCO,
-            highlightthickness=0, height=44
-        )
-        canvas_pwd.place(x=44, y=252, width=342, height=44)
-        self._crear_rounded_rect(
-            canvas_pwd, 0, 0, 342, 44, radius=14,
-            fill="#F7FBF8", outline=ui_tema.BORDE_FUERTE
-        )
-
-        self.entrada_contrasena = tk.Entry(
-            canvas_pwd,
-            font=("Segoe UI", 11),
-            relief="flat",
-            bd=0,
-            bg="#F7FBF8",
-            fg=ui_tema.TEXTO,
+        self.entrada_contrasena = ui_tema.entrada(
+            cuerpo,
+            font=ui_tema.fuente_texto(11),
             show="•",
-            insertbackground=ui_tema.VERDE_OSCURO,
-            highlightthickness=0,
         )
-        canvas_pwd.create_window(
-            171, 22, window=self.entrada_contrasena, width=310, height=28
+        self.entrada_contrasena.pack(
+            fill="x", padx=34, pady=(5, 18)
         )
 
         self.entrada_usuario.bind(
@@ -375,61 +334,53 @@ class LoginApp:
         )
 
         self.btn_ingresar = ui_tema.boton(
-            card_login,
+            cuerpo,
             "INGRESAR AL SISTEMA",
             self.iniciar_sesion,
             principal=True,
-            font=("Segoe UI", 10, "bold"),
+            fuente=ui_tema.fuente_texto(10, "bold"),
+            height=46,
         )
-        self.btn_ingresar.place(x=44, y=330, width=342, height=46)
+        self.btn_ingresar.pack(fill="x", padx=34)
 
-        def on_enter(_evento):
-            self.btn_ingresar.config(bg=ui_tema.VERDE_HOVER)
-
-        def on_leave(_evento):
-            self.btn_ingresar.config(bg=ui_tema.VERDE_PRIMARIO)
-
-        self.btn_ingresar.bind("<Enter>", on_enter)
-        self.btn_ingresar.bind("<Leave>", on_leave)
-
-        tk.Frame(card_login, bg=ui_tema.BORDE, height=1).place(
-            x=44, y=410, width=342
+        tk.Frame(cuerpo, bg=ui_tema.BORDE, height=1).pack(
+            fill="x", padx=34, pady=(22, 14)
         )
 
         tk.Label(
-            card_login,
+            cuerpo,
             text="Sistema de control de mermas",
-            font=("Segoe UI", 8),
+            font=ui_tema.fuente_texto(8),
             bg=ui_tema.BLANCO,
             fg=ui_tema.TEXTO_SECUNDARIO,
-        ).place(x=44, y=432)
+        ).pack(anchor="w", padx=34)
 
         tk.Label(
-            card_login,
+            cuerpo,
             text="Acceso exclusivo para personal autorizado",
-            font=("Segoe UI", 8),
+            font=ui_tema.fuente_texto(8),
             bg=ui_tema.BLANCO,
             fg=ui_tema.TEXTO_SECUNDARIO,
-        ).place(x=44, y=452)
+        ).pack(anchor="w", padx=34, pady=(2, 0))
 
         self.entrada_usuario.focus_set()
 
     def _caracteristica(self, padre, numero, titulo, detalle):
         fila = tk.Frame(padre, bg=ui_tema.BLANCO)
-        fila.pack(fill="x", padx=14, pady=5)
+        fila.pack(fill="x", pady=5)
 
         circulo = tk.Canvas(
-            fila, width=28, height=28,
+            fila, width=30, height=30,
             bg=ui_tema.BLANCO, highlightthickness=0
         )
-        circulo.pack(side="left", padx=(0, 9))
+        circulo.pack(side="left", padx=(0, 10))
         circulo.create_oval(
-            0, 0, 28, 28, fill=ui_tema.VERDE_SUAVE, outline=""
+            0, 0, 30, 30, fill=ui_tema.VERDE_SUAVE, outline=""
         )
         circulo.create_text(
-            14, 14, text=numero,
+            15, 15, text=numero,
             fill=ui_tema.VERDE_OSCURO,
-            font=("Segoe UI", 7, "bold")
+            font=ui_tema.fuente_texto(8, "bold")
         )
 
         textos = tk.Frame(fila, bg=ui_tema.BLANCO)
@@ -437,43 +388,17 @@ class LoginApp:
 
         tk.Label(
             textos, text=titulo,
-            font=("Segoe UI", 9, "bold"),
+            font=ui_tema.fuente_texto(9, "bold"),
             bg=ui_tema.BLANCO, fg=ui_tema.VERDE_OSCURO,
             anchor="w"
         ).pack(anchor="w")
 
         tk.Label(
             textos, text=detalle,
-            font=("Segoe UI", 8),
+            font=ui_tema.fuente_texto(8),
             bg=ui_tema.BLANCO, fg=ui_tema.TEXTO_SECUNDARIO,
             anchor="w"
         ).pack(anchor="w")
-
-    # Método auxiliar para dibujar rectángulos con esquinas redondeadas
-    def _crear_rounded_rect(self, canvas, x1, y1, x2, y2, radius=25, **kwargs):
-        points = [
-            x1 + radius, y1,
-            x1 + radius, y1,
-            x2 - radius, y1,
-            x2 - radius, y1,
-            x2, y1,
-            x2, y1 + radius,
-            x2, y1 + radius,
-            x2, y2 - radius,
-            x2, y2 - radius,
-            x2, y2,
-            x2 - radius, y2,
-            x2 - radius, y2,
-            x1 + radius, y2,
-            x1 + radius, y2,
-            x1, y2,
-            x1, y2 - radius,
-            x1, y2 - radius,
-            x1, y1 + radius,
-            x1, y1 + radius,
-            x1, y1
-        ]
-        return canvas.create_polygon(points, **kwargs, smooth=True)
 
     # --------------------------------------------------
     # VALIDAR CREDENCIALES

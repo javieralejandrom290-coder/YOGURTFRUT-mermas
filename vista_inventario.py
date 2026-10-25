@@ -2,7 +2,7 @@ import tkinter as tk
 
 import ui_tema
 from base_datos import obtener_conexion
-from ui_comunes import crear_boton, crear_tabla, crear_tarjeta_resumen
+from ui_comunes import crear_boton, crear_kpi, crear_tabla
 
 
 def estado_stock(existencia, stock_minimo):
@@ -87,40 +87,43 @@ class ModuloInventario:
 
         # Tarjetas de resumen
         tarjetas = tk.Frame(self.contenido, bg=d.FONDO)
-        tarjetas.pack(fill="x", padx=30, pady=(0, 14))
+        tarjetas.pack(fill="x", padx=32, pady=(0, 16))
         for i in range(3):
             tarjetas.columnconfigure(i, weight=1, uniform="t")
 
-        crear_tarjeta_resumen(
-            d, tarjetas, "PRODUCTOS ACTIVOS", self.var_total
-        ).grid(row=0, column=0, sticky="ew", padx=(0, 8))
-        crear_tarjeta_resumen(
-            d, tarjetas, "VALOR DEL INVENTARIO", self.var_valor
-        ).grid(row=0, column=1, sticky="ew", padx=8)
-        crear_tarjeta_resumen(
-            d, tarjetas, "BAJOS O AGOTADOS", self.var_alertas
-        ).grid(row=0, column=2, sticky="ew", padx=(8, 0))
+        crear_kpi(
+            d, tarjetas, "PRODUCTOS ACTIVOS", variable=self.var_total,
+            color=ui_tema.VERDE_CLARO,
+        ).grid(row=0, column=0, sticky="nsew", padx=(0, 8))
+        crear_kpi(
+            d, tarjetas, "VALOR DEL INVENTARIO", variable=self.var_valor,
+            color=ui_tema.VERDE_MEDIO,
+        ).grid(row=0, column=1, sticky="nsew", padx=8)
+        crear_kpi(
+            d, tarjetas, "BAJOS O AGOTADOS", variable=self.var_alertas,
+            color=ui_tema.ACENTO,
+        ).grid(row=0, column=2, sticky="nsew", padx=(8, 0))
 
         # Barra de filtros
         barra = tk.Frame(self.contenido, bg=d.FONDO)
-        barra.pack(fill="x", padx=30, pady=(0, 12))
+        barra.pack(fill="x", padx=32, pady=(0, 14))
 
         tk.Label(
-            barra, text="Buscar:", font=("Segoe UI", 10),
+            barra, text="Buscar:", font=ui_tema.fuente_texto(10),
             bg=d.FONDO, fg=d.TEXTO
         ).pack(side="left")
 
         entrada = ui_tema.entrada(
-            barra, textvariable=self.busqueda, font=("Segoe UI", 10),
+            barra, textvariable=self.busqueda, font=ui_tema.fuente_texto(10),
             width=28
         )
-        entrada.pack(side="left", padx=(8, 12), ipady=4)
+        entrada.pack(side="left", padx=(8, 12))
         entrada.bind("<KeyRelease>", lambda e: self.cargar())
 
         self.check_alertas = tk.Checkbutton(
             barra, text="Solo productos con alerta",
             variable=self.solo_alertas, command=self.cargar,
-            font=("Segoe UI", 10), bg=d.FONDO, fg=d.TEXTO,
+            font=ui_tema.fuente_texto(10), bg=d.FONDO, fg=d.TEXTO,
             activebackground=d.FONDO, selectcolor=d.BLANCO,
             cursor="hand2", highlightthickness=0, bd=0
         )
@@ -152,17 +155,25 @@ class ModuloInventario:
 
         # Tabla de existencias
         self.marco_existencias, self.tabla = crear_tabla(d, self.contenido, [
-            ("nombre", "Producto", 220, "w"),
-            ("categoria", "Categoría", 160, "w"),
-            ("unidad", "Unidad", 85, "center"),
-            ("precio", "Precio", 110, "e"),
-            ("existencia", "Existencia", 110, "center"),
-            ("stock_minimo", "Stock mínimo", 125, "center"),
-            ("estado", "Estado", 95, "center"),
+            ("nombre", "Producto", 210, "w"),
+            ("categoria", "Categoría", 150, "w"),
+            ("unidad", "Unidad", 80, "center"),
+            ("precio", "Precio", 100, "e"),
+            ("existencia", "Existencia", 105, "center"),
+            ("stock_minimo", "Stock mínimo", 115, "center"),
+            ("estado", "Estado", 85, "center"),
         ])
 
-        self.tabla.tag_configure("bajo", background="#FBF5E4")
-        self.tabla.tag_configure("agotado", background="#FBECEC")
+        self.tabla.tag_configure(
+            "bajo",
+            background=ui_tema.PELIGRO_FONDO,
+            foreground=ui_tema.PELIGRO,
+        )
+        self.tabla.tag_configure(
+            "agotado",
+            background=ui_tema.PELIGRO_FONDO,
+            foreground=ui_tema.PELIGRO,
+        )
 
         self.cambiar_vista("existencias")
 
@@ -174,7 +185,7 @@ class ModuloInventario:
         self.marco_existencias.pack_forget()
         self.marco_movimientos.pack_forget()
         marco = self.marco_existencias if en_existencias else self.marco_movimientos
-        marco.pack(fill="both", expand=True, padx=30, pady=(0, 20))
+        marco.pack(fill="both", expand=True, padx=32, pady=(0, 24))
 
         # Resalta el botón de la vista activa
         for boton, activo in (
@@ -184,7 +195,6 @@ class ModuloInventario:
             boton.configure(
                 bg=d.VERDE_CLARO if activo else d.BLANCO,
                 fg=d.VERDE_OSCURO,
-                highlightthickness=0
             )
 
         self.check_alertas.configure(

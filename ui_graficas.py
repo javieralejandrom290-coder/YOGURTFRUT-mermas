@@ -1,14 +1,13 @@
 import tkinter as tk
 from datetime import date, timedelta
 
+import ui_tema
+
 
 # Gráficas sencillas dibujadas con Canvas (no requieren instalar nada).
 # Se redibujan solas cuando cambia el tamaño de la ventana.
 
-PALETA = [
-    "#8CC7A6", "#A9D8BE", "#79B896", "#B7DCC7",
-    "#6FAF8D", "#C7E6D5", "#9ACAB2", "#D4EBDD",
-]
+PALETA = list(ui_tema.PALETA_GRAFICAS)
 
 
 def formato_dinero(valor):
@@ -87,7 +86,7 @@ class GraficaBarras(tk.Canvas):
         etiqueta = self.create_text(
             evento.x, max(18, evento.y - 20),
             text=f"{f['nombre']}\n{detalle}${f['costo']:,.2f} ({f['porcentaje']:.1f}%)",
-            fill=d.BLANCO, font=("Segoe UI", 9, "bold"),
+            fill=d.BLANCO, font=ui_tema.fuente_texto(9, "bold"),
             anchor="w" if evento.x < self.winfo_width() - 190 else "e",
             tags="hover"
         )
@@ -109,7 +108,7 @@ class GraficaBarras(tk.Canvas):
         if not self.datos:
             self.create_text(
                 ancho / 2, alto / 2, text="Sin datos en este periodo.",
-                fill=d.TEXTO_SECUNDARIO, font=("Segoe UI", 10)
+                fill=d.TEXTO_SECUNDARIO, font=ui_tema.fuente_texto(10)
             )
             return
 
@@ -130,13 +129,13 @@ class GraficaBarras(tk.Canvas):
             self.create_text(
                 margen_izq - 10, y,
                 text=recortar(f["nombre"], max(8, int((margen_izq - 16) / 7.6))),
-                anchor="e", fill=d.TEXTO, font=("Segoe UI", 9)
+                anchor="e", fill=d.TEXTO, font=ui_tema.fuente_texto(9)
             )
 
             # Fondo tenue de la barra para ver la escala completa
             self.create_rectangle(
                 margen_izq, y - grosor / 2, margen_izq + largo, y + grosor / 2,
-                fill="#F1F8F4", outline=""
+                fill=ui_tema.VERDE_SUAVE, outline=""
             )
             self.create_rectangle(
                 margen_izq, y - grosor / 2,
@@ -148,7 +147,7 @@ class GraficaBarras(tk.Canvas):
             self.create_text(
                 margen_izq + largo + 8, y,
                 text=f"{formato_dinero(f['costo'])} · {f['porcentaje']:.0f}%",
-                anchor="w", fill=d.TEXTO, font=("Segoe UI", 9, "bold")
+                anchor="w", fill=d.TEXTO, font=ui_tema.fuente_texto(9, "bold")
             )
 
 
@@ -184,7 +183,7 @@ class GraficaLinea(tk.Canvas):
         if not self.datos or not any(c for _, c in self.datos):
             self.create_text(
                 ancho / 2, alto / 2, text="Sin datos en este periodo.",
-                fill=d.TEXTO_SECUNDARIO, font=("Segoe UI", 10)
+                fill=d.TEXTO_SECUNDARIO, font=ui_tema.fuente_texto(10)
             )
             return
 
@@ -198,10 +197,10 @@ class GraficaLinea(tk.Canvas):
         for i in range(5):
             valor = tope * i / 4
             y = arriba + area_h - area_h * i / 4
-            self.create_line(izq, y, ancho - der, y, fill="#E9F3ED")
+            self.create_line(izq, y, ancho - der, y, fill=ui_tema.BORDE)
             self.create_text(
                 izq - 8, y, text=formato_dinero(valor), anchor="e",
-                fill=d.TEXTO_SECUNDARIO, font=("Segoe UI", 8)
+                fill=d.TEXTO_SECUNDARIO, font=ui_tema.fuente_texto(8)
             )
 
         def coordenadas(i, costo):
@@ -222,7 +221,7 @@ class GraficaLinea(tk.Canvas):
             for x, y in puntos:
                 poligono += [x, y]
             poligono += [puntos[-1][0], base]
-            self.create_polygon(poligono, fill="#E2F2E9", outline="")
+            self.create_polygon(poligono, fill=ui_tema.VERDE_SUAVE, outline="")
             linea = [c for p in puntos for c in p]
             self.create_line(
                 *linea, fill=d.VERDE_CLARO, width=2.5,
@@ -243,7 +242,7 @@ class GraficaLinea(tk.Canvas):
             dia = self.datos[i][0]
             self.create_text(
                 puntos[i][0], alto - 14, text=dia.strftime("%d/%m"),
-                fill=d.TEXTO_SECUNDARIO, font=("Segoe UI", 8)
+                fill=d.TEXTO_SECUNDARIO, font=ui_tema.fuente_texto(8)
             )
 
     @staticmethod
@@ -279,7 +278,7 @@ class GraficaLinea(tk.Canvas):
         ancla = "w" if x < ancho - 110 else "e"
         etiqueta = self.create_text(
             caja_x, max(30, y - 18), text=texto, anchor=ancla,
-            fill=d.BLANCO, font=("Segoe UI", 9, "bold"), tags="hover"
+            fill=d.BLANCO, font=ui_tema.fuente_texto(9, "bold"), tags="hover"
         )
         caja = self.bbox(etiqueta)
         fondo = self.create_rectangle(

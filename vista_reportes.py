@@ -3,8 +3,10 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from datetime import date, timedelta
 
+import ui_tema
+
 from base_datos import obtener_conexion
-from ui_comunes import crear_boton, crear_tabla, crear_tarjeta_resumen
+from ui_comunes import Tarjeta, crear_boton, crear_kpi, crear_tabla
 from vista_historial import consultar_historial
 from ui_graficas import GraficaBarras, GraficaLinea, rellenar_dias
 
@@ -171,21 +173,7 @@ class ModuloReportes:
         self.configurar_estilos()
 
     def configurar_estilos(self):
-        estilo = ttk.Style()
-        # El tema 'clam' elimina el aspecto 3D antiguo de Windows
-        if 'clam' in estilo.theme_names():
-            estilo.theme_use('clam')
-            
-        # Estilo plano para los Combobox
-        estilo.configure(
-            "Modern.TCombobox",
-            background=self.dashboard.BLANCO,
-            fieldbackground=self.dashboard.BLANCO,
-            borderwidth=1,
-            bordercolor=self.dashboard.BORDE,
-            arrowsize=14,
-            padding=4
-        )
+        ui_tema.aplicar_tema(self.dashboard.root)
 
     def mostrar(self):
         d = self.dashboard
@@ -197,17 +185,17 @@ class ModuloReportes:
 
         # BARRA SUPERIOR (Filtros y exportación)
         barra = tk.Frame(self.contenido, bg=d.FONDO)
-        barra.pack(fill="x", padx=40, pady=(10, 20)) # Aumentamos el padding
+        barra.pack(fill="x", padx=32, pady=(6, 18))
 
         tk.Label(
-            barra, text="Periodo:", font=("Segoe UI", 10, "bold"),
+            barra, text="Periodo:", font=ui_tema.fuente_texto(10, "bold"),
             bg=d.FONDO, fg=d.TEXTO_SECUNDARIO
         ).pack(side="left", padx=(0, 10))
 
         combo = ttk.Combobox(
             barra, textvariable=self.var_periodo, values=PERIODOS,
-            state="readonly", width=22, font=("Segoe UI", 10),
-            style="Modern.TCombobox"
+            state="readonly", width=22, font=ui_tema.fuente_texto(10),
+            style="Tema.TCombobox"
         )
         combo.pack(side="left")
         combo.bind("<<ComboboxSelected>>", lambda e: self.cargar())
@@ -218,30 +206,33 @@ class ModuloReportes:
 
         # TARJETAS DE RESUMEN (KPIs)
         tarjetas = tk.Frame(self.contenido, bg=d.FONDO)
-        tarjetas.pack(fill="x", padx=40, pady=(0, 25))
+        tarjetas.pack(fill="x", padx=32, pady=(0, 22))
         for i in range(4):
             tarjetas.columnconfigure(i, weight=1, uniform="t")
 
-        # Aumentamos el espaciado entre tarjetas (padx)
-        crear_tarjeta_resumen(
-            d, tarjetas, "MERMAS REGISTRADAS", self.var_registros
-        ).grid(row=0, column=0, sticky="ew", padx=(0, 10))
-        
-        crear_tarjeta_resumen(
-            d, tarjetas, "COSTO TOTAL PERDIDO", self.var_costo
-        ).grid(row=0, column=1, sticky="ew", padx=10)
-        
-        crear_tarjeta_resumen(
-            d, tarjetas, "% MERMA VS COMPRAS", self.var_porcentaje
-        ).grid(row=0, column=2, sticky="ew", padx=10)
-        
-        crear_tarjeta_resumen(
-            d, tarjetas, "MOTIVO PRINCIPAL", self.var_principal
-        ).grid(row=0, column=3, sticky="ew", padx=(10, 0))
+        crear_kpi(
+            d, tarjetas, "MERMAS REGISTRADAS", variable=self.var_registros,
+            color=ui_tema.VERDE_CLARO,
+        ).grid(row=0, column=0, sticky="nsew", padx=(0, 9))
+
+        crear_kpi(
+            d, tarjetas, "COSTO TOTAL PERDIDO", variable=self.var_costo,
+            color=ui_tema.VERDE_MEDIO,
+        ).grid(row=0, column=1, sticky="nsew", padx=9)
+
+        crear_kpi(
+            d, tarjetas, "% MERMA VS COMPRAS", variable=self.var_porcentaje,
+            color=ui_tema.ACENTO,
+        ).grid(row=0, column=2, sticky="nsew", padx=9)
+
+        crear_kpi(
+            d, tarjetas, "MOTIVO PRINCIPAL", variable=self.var_principal,
+            color=ui_tema.VERDE_CLARO,
+        ).grid(row=0, column=3, sticky="nsew", padx=(9, 0))
 
         # CUERPO PRINCIPAL (Gráficas y Tablas)
         cuerpo = tk.Frame(self.contenido, bg=d.FONDO)
-        cuerpo.pack(fill="both", expand=True, padx=40, pady=(0, 30))
+        cuerpo.pack(fill="both", expand=True, padx=32, pady=(0, 28))
         cuerpo.columnconfigure(0, weight=1, uniform="c")
         cuerpo.columnconfigure(1, weight=1, uniform="c")
         cuerpo.rowconfigure(1, weight=1)
@@ -250,14 +241,14 @@ class ModuloReportes:
         encabezado = tk.Frame(cuerpo, bg=d.FONDO)
         encabezado.grid(row=0, column=0, sticky="w", pady=(0, 10))
         tk.Label(
-            encabezado, text="Pérdidas por", font=("Segoe UI", 12, "bold"),
+            encabezado, text="Pérdidas por", font=ui_tema.fuente_titulo(13),
             bg=d.FONDO, fg=d.VERDE_OSCURO
         ).pack(side="left", padx=(0, 10))
-        
+
         combo_agrupar = ttk.Combobox(
             encabezado, textvariable=self.var_agrupar,
             values=["Motivo", "Tipo de merma", "Día"], state="readonly",
-            width=16, font=("Segoe UI", 10), style="Modern.TCombobox"
+            width=16, font=ui_tema.fuente_texto(10), style="Tema.TCombobox"
         )
         combo_agrupar.pack(side="left")
         combo_agrupar.bind("<<ComboboxSelected>>", lambda e: self.cargar())
@@ -265,17 +256,14 @@ class ModuloReportes:
         # Encabezado Tabla
         tk.Label(
             cuerpo, text="Productos con más pérdidas",
-            font=("Segoe UI", 12, "bold"), bg=d.FONDO, fg=d.VERDE_OSCURO
+            font=ui_tema.fuente_titulo(13), bg=d.FONDO, fg=d.VERDE_OSCURO
         ).grid(row=0, column=1, sticky="w", pady=(0, 10), padx=(10, 0))
 
         # Contenedor Gráfica
-        marco_g = tk.Frame(
-            cuerpo, bg=d.BLANCO,
-            highlightbackground=d.BORDE, highlightthickness=1
-        )
+        marco_g = Tarjeta(cuerpo, bg=d.BLANCO, padding=10)
         marco_g.grid(row=1, column=0, sticky="nsew", padx=(0, 10))
-        self.grafica_barras = GraficaBarras(d, marco_g, alto=200)
-        self.grafica_linea = GraficaLinea(d, marco_g, alto=200)
+        self.grafica_barras = GraficaBarras(d, marco_g.cuerpo, alto=200)
+        self.grafica_linea = GraficaLinea(d, marco_g.cuerpo, alto=200)
 
         # Contenedor Tabla
         marco_p, self.tabla_producto = crear_tabla(d, cuerpo, [

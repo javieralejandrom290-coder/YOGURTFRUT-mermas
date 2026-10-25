@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 import ui_tema
-from ui_comunes import activar_filas_alternadas
+from ui_comunes import Tarjeta, crear_tabla as construir_tabla
 from base_datos import obtener_conexion, registrar_movimiento_inventario
 
 
@@ -42,12 +42,12 @@ class ModuloProductos:
 
         # Fila 1: búsqueda y filtro
         barra = tk.Frame(self.contenido, bg=d.FONDO)
-        barra.pack(fill="x", padx=30, pady=(0, 8))
+        barra.pack(fill="x", padx=32, pady=(0, 10))
 
         tk.Label(
             barra,
             text="Buscar:",
-            font=("Segoe UI", 10),
+            font=ui_tema.fuente_texto(10),
             bg=d.FONDO,
             fg=d.TEXTO
         ).pack(side="left")
@@ -55,10 +55,10 @@ class ModuloProductos:
         entrada = ui_tema.entrada(
             barra,
             textvariable=self.busqueda,
-            font=("Segoe UI", 10),
+            font=ui_tema.fuente_texto(10),
             width=28
         )
-        entrada.pack(side="left", padx=(8, 16), ipady=4)
+        entrada.pack(side="left", padx=(8, 16), ipady=2)
         entrada.bind("<KeyRelease>", lambda evento: self.cargar_productos())
 
         tk.Checkbutton(
@@ -66,7 +66,7 @@ class ModuloProductos:
             text="Mostrar inactivos",
             variable=self.mostrar_inactivos,
             command=self.cargar_productos,
-            font=("Segoe UI", 10),
+            font=ui_tema.fuente_texto(10),
             bg=d.FONDO,
             fg=d.TEXTO,
             activebackground=d.FONDO,
@@ -78,7 +78,7 @@ class ModuloProductos:
 
         # Fila 2: acciones
         acciones = tk.Frame(self.contenido, bg=d.FONDO)
-        acciones.pack(fill="x", padx=30, pady=(0, 12))
+        acciones.pack(fill="x", padx=32, pady=(0, 14))
 
         self.crear_boton(
             acciones, "Nuevo producto", self.nuevo_producto, principal=True
@@ -95,79 +95,42 @@ class ModuloProductos:
     def crear_tabla(self):
         d = self.dashboard
 
-        tabla_frame = tk.Frame(
-            self.contenido,
-            bg=d.BLANCO,
-            highlightbackground=d.BORDE,
-            highlightthickness=1
-        )
-        tabla_frame.pack(fill="both", expand=True, padx=30, pady=(0, 10))
-
-        columnas = (
-            "nombre", "categoria", "unidad", "costo",
-            "existencia", "stock_minimo", "estado"
-        )
-
-        self.tabla = ttk.Treeview(
-            tabla_frame,
-            columns=columnas,
-            show="headings",
-            style="Mermas.Treeview",
-            selectmode="browse"
-        )
-
-        encabezados = {
-            "nombre": "Producto",
-            "categoria": "Categoría",
-            "unidad": "Unidad",
-            "costo": "Costo unitario",
-            "existencia": "Existencia",
-            "stock_minimo": "Stock mínimo",
-            "estado": "Estado"
-        }
-
-        anchos = {
-            "nombre": 200,
-            "categoria": 150,
-            "unidad": 80,
-            "costo": 135,
-            "existencia": 100,
-            "stock_minimo": 125,
-            "estado": 90
-        }
-
-        for columna in columnas:
-            self.tabla.heading(columna, text=encabezados[columna])
-            self.tabla.column(
-                columna,
-                width=anchos[columna],
-                anchor="w" if columna == "nombre" else "center"
-            )
-
-        self.tabla.tag_configure("stock_bajo", background="#FBECEC")
-        activar_filas_alternadas(self.tabla)
-        self.tabla.tag_configure("inactivo", foreground=d.TEXTO_SECUNDARIO)
-
-        barra = ttk.Scrollbar(
-            tabla_frame,
-            orient="vertical",
-            command=self.tabla.yview
-        )
-        self.tabla.configure(yscrollcommand=barra.set)
-
-        self.tabla.pack(side="left", fill="both", expand=True, padx=(8, 0), pady=8)
-        barra.pack(side="right", fill="y", padx=(0, 8), pady=8)
-
-        self.tabla.bind("<Double-1>", lambda evento: self.editar_producto())
-
         self.etiqueta_resumen = tk.Label(
             self.contenido,
             text="",
-            font=("Segoe UI", 9),
+            font=ui_tema.fuente_texto(9),
             bg=d.FONDO,
             fg=d.TEXTO_SECUNDARIO
         )
-        self.etiqueta_resumen.pack(anchor="w", padx=30, pady=(0, 20))
+        # Se reserva el espacio del resumen antes de la tabla para que no
+        # quede oculto cuando la tabla ocupa todo el alto disponible.
+        self.etiqueta_resumen.pack(side="bottom", anchor="w", padx=32, pady=(0, 22))
+
+        self.tabla_frame, self.tabla = construir_tabla(
+            d,
+            self.contenido,
+            [
+                ("nombre", "Producto", 200, "w"),
+                ("categoria", "Categoría", 150, "w"),
+                ("unidad", "Unidad", 80, "center"),
+                ("costo", "Costo unitario", 135, "e"),
+                ("existencia", "Existencia", 100, "center"),
+                ("stock_minimo", "Stock mínimo", 125, "center"),
+                ("estado", "Estado", 90, "center"),
+            ],
+        )
+        self.tabla_frame.pack(
+            fill="both", expand=True, padx=32, pady=(0, 12)
+        )
+
+        self.tabla.tag_configure(
+            "stock_bajo",
+            background=ui_tema.PELIGRO_FONDO,
+            foreground=ui_tema.PELIGRO,
+        )
+        self.tabla.tag_configure("inactivo", foreground=d.TEXTO_SECUNDARIO)
+
+        self.tabla.bind("<Double-1>", lambda evento: self.editar_producto())
 
 
     def cargar_productos(self):
@@ -319,57 +282,65 @@ class ModuloProductos:
         ventana = tk.Toplevel(self.root)
         ventana.title("Editar producto" if editando else "Nuevo producto")
         ventana.resizable(False, False)
-        ventana.configure(bg=d.BLANCO)
+        ventana.configure(bg=d.FONDO)
         ventana.transient(self.root)
         ventana.grab_set()
 
         ventana.update_idletasks()
-        x = (ventana.winfo_screenwidth() - 430) // 2
-        y = (ventana.winfo_screenheight() - 560) // 2
-        ventana.geometry(f"430x560+{x}+{y}")
+        x = (ventana.winfo_screenwidth() - 440) // 2
+        y = (ventana.winfo_screenheight() - 670) // 2
+        ventana.geometry(f"440x670+{x}+{y}")
+
+        tarjeta = Tarjeta(ventana, bg=d.BLANCO, padding=24)
+        tarjeta.pack(fill="both", expand=True, padx=16, pady=16)
+        cuerpo = tarjeta.cuerpo
 
         tk.Label(
-            ventana,
+            cuerpo,
             text="Editar producto" if editando else "Nuevo producto",
-            font=("Segoe UI", 17, "bold"),
+            font=ui_tema.fuente_titulo(18),
             bg=d.BLANCO,
             fg=d.VERDE_OSCURO
-        ).pack(pady=(22, 16))
+        ).pack(anchor="w")
+
+        tk.Frame(
+            cuerpo, bg=ui_tema.VERDE_MEDIO, height=3, width=46
+        ).pack(anchor="w", pady=(6, 14))
 
         campos = {}
 
         def etiqueta(texto):
             tk.Label(
-                ventana,
+                cuerpo,
                 text=texto,
-                font=("Segoe UI", 10, "bold"),
+                font=ui_tema.fuente_texto(10, "bold"),
                 bg=d.BLANCO,
                 fg=d.TEXTO
-            ).pack(anchor="w", padx=45)
+            ).pack(anchor="w")
 
         etiqueta("Nombre del producto")
         campos["nombre"] = ui_tema.entrada(
-            ventana, font=("Segoe UI", 10)
+            cuerpo, font=ui_tema.fuente_texto(10)
         )
-        campos["nombre"].pack(fill="x", padx=45, pady=(4, 10))
+        campos["nombre"].pack(fill="x", pady=(4, 8))
 
         etiqueta("Categoría (elige una o escribe una nueva)")
         campos["categoria"] = ttk.Combobox(
-            ventana,
+            cuerpo,
             values=self.obtener_categorias(),
-            font=("Segoe UI", 10),
+            font=ui_tema.fuente_texto(10),
             style="Tema.TCombobox"
         )
-        campos["categoria"].pack(fill="x", padx=45, pady=(4, 10))
+        campos["categoria"].pack(fill="x", pady=(4, 8))
 
         etiqueta("Unidad")
         campos["unidad"] = ttk.Combobox(
-            ventana,
+            cuerpo,
             values=UNIDADES,
-            font=("Segoe UI", 10),
+            font=ui_tema.fuente_texto(10),
             style="Tema.TCombobox"
         )
-        campos["unidad"].pack(fill="x", padx=45, pady=(4, 10))
+        campos["unidad"].pack(fill="x", pady=(4, 8))
 
         for texto, clave in [
             ("Costo unitario ($)", "costo_unitario"),
@@ -378,9 +349,9 @@ class ModuloProductos:
         ]:
             etiqueta(texto)
             campos[clave] = ui_tema.entrada(
-                ventana, font=("Segoe UI", 10)
+                cuerpo, font=ui_tema.fuente_texto(10)
             )
-            campos[clave].pack(fill="x", padx=45, pady=(4, 10))
+            campos[clave].pack(fill="x", pady=(4, 8))
 
         if editando:
             campos["nombre"].insert(0, producto["nombre"])
@@ -510,9 +481,9 @@ class ModuloProductos:
             self.cargar_productos()
 
         ui_tema.boton(
-            ventana,
+            cuerpo,
             "GUARDAR CAMBIOS" if editando else "GUARDAR PRODUCTO",
             guardar, principal=True
-        ).pack(fill="x", padx=45, pady=(8, 20))
+        ).pack(fill="x", pady=(12, 0))
 
         ventana.bind("<Return>", lambda evento: guardar())
