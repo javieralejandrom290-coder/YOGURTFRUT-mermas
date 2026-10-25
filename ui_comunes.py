@@ -4,59 +4,47 @@ import tkinter as tk
 from datetime import date, datetime
 from tkinter import ttk
 
+import ui_tema
+
 
 # Componentes visuales compartidos por los apartados del dashboard.
 # Todos reciben el dashboard (d) para usar su misma paleta de colores.
 
 
 def crear_boton(d, contenedor, texto, comando, principal=False):
-    """Botón verde (principal) o blanco con borde (secundario)."""
-    return tk.Button(
-        contenedor,
-        text=texto,
-        command=comando,
-        relief="flat", 
-        borderwidth=0,
-        font=("Segoe UI", 10, "bold"),
-        bg=d.VERDE_CLARO if principal else d.BLANCO,
-        fg=d.BLANCO if principal else d.VERDE_OSCURO,
-        activebackground="#689F38" if principal else d.VERDE_SUAVE,
-        activeforeground=d.BLANCO if principal else d.VERDE_OSCURO,
-        highlightbackground=d.BORDE,
-        highlightthickness=0 if principal else 1,
-        cursor="hand2",
-        padx=16,
-        pady=8
+    """Botón pastel (principal) o blanco con borde (secundario)."""
+    return ui_tema.boton(
+        contenedor, texto, comando, principal=principal
     )
 
 
 def crear_tabla(d, contenedor, columnas):
-    print("¡DIBUJANDO TABLA MODERNA!") # Esto nos avisará en la terminal si funciona
-    
     estilo = ttk.Style()
-    
-    # Le ponemos nombre "Custom.Treeview" para que nada lo bloquee
     estilo.configure(
         "Custom.Treeview",
         background=d.BLANCO,
-        foreground="#333333",
-        rowheight=45,
+        foreground=d.TEXTO,
+        rowheight=42,
         fieldbackground=d.BLANCO,
         borderwidth=0,
-        font=("Segoe UI", 11)
+        font=(ui_tema.FUENTE, 10),
     )
-    
     estilo.configure(
         "Custom.Treeview.Heading",
-        background="#E2E8F0",
-        foreground="#1E293B",
-        font=("Segoe UI", 12, "bold"),
+        background=d.VERDE_SUAVE,
+        foreground=d.VERDE_OSCURO,
+        font=(ui_tema.FUENTE, 10, "bold"),
         borderwidth=0,
-        relief="flat"
+        relief="flat",
+        padding=(10, 10),
     )
-    estilo.map("Custom.Treeview.Heading", background=[('active', '#CBD5E1')])
+    estilo.map("Custom.Treeview.Heading", background=[("active", d.VERDE_ACTIVO)])
+    estilo.map(
+        "Custom.Treeview",
+        background=[("selected", d.VERDE_ACTIVO)],
+        foreground=[("selected", d.VERDE_OSCURO)],
+    )
 
-    # ... (aquí sigue tu código de marco = tk.Frame que ya tenías) ...
     marco = tk.Frame(
         contenedor,
         bg=d.BLANCO,
@@ -69,14 +57,16 @@ def crear_tabla(d, contenedor, columnas):
         columns=[clave for clave, _, _, _ in columnas],
         show="headings",
         style="Custom.Treeview",
-        
     )
 
     for clave, encabezado, ancho, alineacion in columnas:
         tabla.heading(clave, text=encabezado)
         tabla.column(clave, width=ancho, anchor=alineacion)
 
-    barra = ttk.Scrollbar(marco, orient="vertical", command=tabla.yview)
+    barra = ttk.Scrollbar(
+        marco, orient="vertical", command=tabla.yview,
+        style="Tema.Vertical.TScrollbar"
+    )
     tabla.configure(yscrollcommand=barra.set)
 
     tabla.pack(
@@ -97,7 +87,7 @@ def crear_tabla(d, contenedor, columnas):
     return marco, tabla
 
 
-def activar_filas_alternadas(tabla, color="#F6F9F7"):
+def activar_filas_alternadas(tabla, color="#F7FCF9"):
     """Aplica un color alterno a las filas que no tienen etiquetas propias."""
     tabla.tag_configure("zebra", background=color)
     insertar_original = tabla.insert
@@ -114,25 +104,26 @@ def activar_filas_alternadas(tabla, color="#F6F9F7"):
 
 
 def crear_tarjeta_resumen(d, padre, titulo, variable):
-    tarjeta = tk.Frame(padre, bg=d.BLANCO, highlightbackground=d.BORDE, highlightthickness=1)
-    
-    # Línea verde superior
-    tk.Frame(tarjeta, bg=d.VERDE_OSCURO, height=4).pack(fill="x")
+    tarjeta = tk.Frame(
+        padre, bg=d.BLANCO,
+        highlightbackground=d.BORDE, highlightthickness=1
+    )
 
-    # Contenedor con padding para que respire el texto
+    # Detalle pastel superior
+    tk.Frame(tarjeta, bg=d.VERDE_CLARO, height=4).pack(fill="x")
+
     contenido = tk.Frame(tarjeta, bg=d.BLANCO)
-    contenido.pack(fill="both", expand=True, padx=15, pady=15)
+    contenido.pack(fill="both", expand=True, padx=18, pady=16)
 
     tk.Label(
-        contenido, text=titulo, font=("Segoe UI", 9, "bold"), 
-        bg=d.BLANCO, fg="#777777" # Gris medio para el título
+        contenido, text=titulo, font=("Segoe UI", 8, "bold"),
+        bg=d.BLANCO, fg=d.TEXTO_SECUNDARIO
     ).pack(anchor="w")
 
     tk.Label(
-        # Aquí usamos 'variable' para que coincida con el parámetro de tu función
-        contenido, textvariable=variable, font=("Segoe UI", 22, "bold"), 
-        bg=d.BLANCO, fg="#222222" # Casi negro para el número
-    ).pack(anchor="w", pady=(5, 0))
+        contenido, textvariable=variable, font=("Segoe UI", 22, "bold"),
+        bg=d.BLANCO, fg=d.VERDE_OSCURO
+    ).pack(anchor="w", pady=(6, 0))
 
     return tarjeta
 
@@ -235,13 +226,13 @@ class CalendarioFecha(tk.Toplevel):
                 hijo.destroy()
 
         self.boton(
-            self.encabezado, "‹",
+            self.encabezado, "<",
             lambda: self.cambiar_mes(-1),
             width=3
         ).pack(side="left")
 
         self.boton(
-            self.encabezado, "›",
+            self.encabezado, ">",
             lambda: self.cambiar_mes(1),
             width=3
         ).pack(side="right")
@@ -277,7 +268,7 @@ class CalendarioFecha(tk.Toplevel):
                 fecha = date(self.anio, self.mes, dia)
 
                 if fecha == self.seleccionada:
-                    estilo = {"bg": d.VERDE_CLARO, "fg": d.BLANCO}
+                    estilo = {"bg": d.VERDE_CLARO, "fg": d.VERDE_OSCURO}
                 elif fecha == hoy:
                     estilo = {"bg": d.VERDE_SUAVE, "fg": d.VERDE_OSCURO}
                 else:
@@ -357,14 +348,15 @@ def crear_campo_fecha(
 
     boton = tk.Button(
         marco,
-        text="▦",
-        font=("Segoe UI", 11),
+        text="Elegir",
+        font=("Segoe UI", 8, "bold"),
         relief="flat",
         bd=0,
         bg=d.BLANCO,
         fg=d.VERDE_OSCURO,
-        cursor="hand2",
         activebackground=d.VERDE_SUAVE,
+        activeforeground=d.VERDE_OSCURO,
+        cursor="hand2",
         padx=8,
         command=lambda: CalendarioFecha(
             d, marco, variable, permitir_vacio
@@ -404,7 +396,7 @@ def crear_logo(padre, bg, alto=44, texto="YOGUFRUT", fg="#FFFFFF"):
     """
     Etiqueta con el logo, escalado a `alto` píxeles de alto.
     Si no hay archivo de logo (o no se puede leer), muestra el nombre
-    del negocio con una hoja, igual que la pantalla de login.
+    del negocio como respaldo.
     """
     ruta = buscar_logo()
     if ruta:
@@ -427,6 +419,6 @@ def crear_logo(padre, bg, alto=44, texto="YOGUFRUT", fg="#FFFFFF"):
             pass  # si algo falla, se usa el texto de respaldo
 
     return tk.Label(
-        padre, text=f"🌿 {texto}", font=("Segoe UI", 14, "bold"),
+        padre, text=texto, font=("Segoe UI", 15, "bold"),
         bg=bg, fg=fg
     )

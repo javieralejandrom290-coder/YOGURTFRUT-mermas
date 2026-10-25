@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 import seguridad
+import ui_tema
 from base_datos import obtener_conexion
 from ui_comunes import crear_boton, crear_tabla
 
@@ -54,7 +55,7 @@ class ModuloUsuarios:
         barra.pack(fill="x", padx=30, pady=(0, 12))
 
         crear_boton(
-            d, barra, "＋ Nuevo usuario", self.nuevo, principal=True
+            d, barra, "Nuevo usuario", self.nuevo, principal=True
         ).pack(side="left")
         crear_boton(d, barra, "Editar", self.editar).pack(side="left", padx=8)
         crear_boton(
@@ -174,12 +175,12 @@ class ModuloUsuarios:
             if isinstance(tipo, list):
                 entrada = ttk.Combobox(
                     ventana, values=tipo, state="readonly",
-                    font=("Segoe UI", 11)
+                    font=("Segoe UI", 10), style="Tema.TCombobox"
                 )
                 entrada.set(inicial or tipo[-1])
             else:
-                entrada = tk.Entry(
-                    ventana, font=("Segoe UI", 11), relief="solid", bd=1,
+                entrada = ui_tema.entrada(
+                    ventana, font=("Segoe UI", 10),
                     show="*" if tipo == "contrasena" else ""
                 )
                 if inicial:
@@ -201,11 +202,8 @@ class ModuloUsuarios:
                 ventana.destroy()
                 self.cargar()
 
-        tk.Button(
-            ventana, text=texto_boton, command=guardar,
-            font=("Segoe UI", 10, "bold"), bg=d.VERDE_CLARO, fg=d.BLANCO,
-            activebackground="#689F38", activeforeground=d.BLANCO,
-            relief="flat", cursor="hand2", pady=10
+        ui_tema.boton(
+            ventana, texto_boton, guardar, principal=True
         ).pack(fill="x", padx=45, pady=(8, 20))
 
         ventana.bind("<Return>", lambda evento: guardar())

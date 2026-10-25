@@ -6,8 +6,8 @@ from datetime import date, timedelta
 # Se redibujan solas cuando cambia el tamaño de la ventana.
 
 PALETA = [
-    "#7CB342", "#173B32", "#F9A825", "#EF6C00",
-    "#26A69A", "#8E6BBF", "#C0392B", "#78909C",
+    "#8CC7A6", "#A9D8BE", "#79B896", "#B7DCC7",
+    "#6FAF8D", "#C7E6D5", "#9ACAB2", "#D4EBDD",
 ]
 
 
@@ -136,7 +136,7 @@ class GraficaBarras(tk.Canvas):
             # Fondo tenue de la barra para ver la escala completa
             self.create_rectangle(
                 margen_izq, y - grosor / 2, margen_izq + largo, y + grosor / 2,
-                fill="#F1F5F2", outline=""
+                fill="#F1F8F4", outline=""
             )
             self.create_rectangle(
                 margen_izq, y - grosor / 2,
@@ -198,7 +198,7 @@ class GraficaLinea(tk.Canvas):
         for i in range(5):
             valor = tope * i / 4
             y = arriba + area_h - area_h * i / 4
-            self.create_line(izq, y, ancho - der, y, fill="#E8EEEA")
+            self.create_line(izq, y, ancho - der, y, fill="#E9F3ED")
             self.create_text(
                 izq - 8, y, text=formato_dinero(valor), anchor="e",
                 fill=d.TEXTO_SECUNDARIO, font=("Segoe UI", 8)
@@ -222,7 +222,7 @@ class GraficaLinea(tk.Canvas):
             for x, y in puntos:
                 poligono += [x, y]
             poligono += [puntos[-1][0], base]
-            self.create_polygon(poligono, fill="#E6F1DA", outline="")
+            self.create_polygon(poligono, fill="#E2F2E9", outline="")
             linea = [c for p in puntos for c in p]
             self.create_line(
                 *linea, fill=d.VERDE_CLARO, width=2.5,

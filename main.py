@@ -1,5 +1,5 @@
 import sys
-from tkinter import Tk, ttk
+from tkinter import Tk
 
 import base_datos
 from base_datos import inicializar_base_datos
@@ -18,17 +18,6 @@ def main():
     inicializar_base_datos()
     
     root = Tk()
-    
-    estilo_global = ttk.Style()
-    if 'clam' in estilo_global.theme_names():
-        estilo_global.theme_use('clam')
-        
-    LoginApp(root)
-    root.mainloop()
-    estilo_global = ttk.Style()
-    if 'clam' in estilo_global.theme_names():
-        estilo_global.theme_use('clam')
-        
     LoginApp(root)
     root.mainloop()
 

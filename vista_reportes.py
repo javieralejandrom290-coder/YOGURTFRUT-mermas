@@ -201,7 +201,7 @@ class ModuloReportes:
 
         tk.Label(
             barra, text="Periodo:", font=("Segoe UI", 10, "bold"),
-            bg=d.FONDO, fg="#555555" # Gris oscuro para etiquetas
+            bg=d.FONDO, fg=d.TEXTO_SECUNDARIO
         ).pack(side="left", padx=(0, 10))
 
         combo = ttk.Combobox(

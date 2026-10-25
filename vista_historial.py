@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from datetime import datetime, date
 
+import ui_tema
 from base_datos import obtener_conexion
 from ui_comunes import crear_boton, crear_tabla
 from vista_mermas import RegistrarMermaView
@@ -72,16 +73,17 @@ def consultar_historial(desde=None, hasta=None, motivo=None, producto="", tipo=N
 
 class ModuloHistorial:
 
-    VERDE_OSCURO = "#064E3B"
-    VERDE_MEDIO = "#059669"
-    VERDE_SUAVE = "#DCFCE7"
-    VERDE_HOVER = "#047857"
-    FONDO_GENERAL = "#F0FDF4"
-    BLANCO = "#FFFFFF"
-    TEXTO_MAIN = "#0F172A"
-    TEXTO_MUTED = "#64748B"
-    GRIS_BORDE = "#CBD5E1"
-    AZUL_BTN = "#2563EB"
+    VERDE_OSCURO = ui_tema.VERDE_OSCURO
+    VERDE_MEDIO = ui_tema.VERDE_PRIMARIO
+    VERDE_CLARO = ui_tema.VERDE_CLARO
+    VERDE_SUAVE = ui_tema.VERDE_SUAVE
+    VERDE_HOVER = ui_tema.VERDE_HOVER
+    FONDO_GENERAL = ui_tema.FONDO
+    BLANCO = ui_tema.BLANCO
+    TEXTO_MAIN = ui_tema.TEXTO
+    TEXTO_MUTED = ui_tema.TEXTO_SECUNDARIO
+    GRIS_BORDE = ui_tema.BORDE
+    AZUL_BTN = ui_tema.VERDE_PRIMARIO
 
     def __init__(self, dashboard):
         self.dashboard = dashboard
@@ -104,40 +106,54 @@ class ModuloHistorial:
         d.limpiar_contenido()
         self.contenido.config(bg=self.FONDO_GENERAL)
 
-        header = tk.Frame(self.contenido, bg=self.VERDE_OSCURO, height=65)
+        header = tk.Frame(self.contenido, bg=self.VERDE_SUAVE, height=68)
         header.pack(fill="x")
         header.pack_propagate(False)
 
-        header_content = tk.Frame(header, bg=self.VERDE_OSCURO)
+        header_content = tk.Frame(header, bg=self.VERDE_SUAVE)
         header_content.pack(fill="both", expand=True, padx=25, pady=12)
 
         tk.Label(
-            header_content, text="📊 Historial de Mermas",
-            font=("Segoe UI", 15, "bold"), bg=self.VERDE_OSCURO, fg=self.BLANCO
+            header_content, text="Historial de mermas",
+            font=("Segoe UI", 15, "bold"),
+            bg=self.VERDE_SUAVE, fg=self.VERDE_OSCURO
         ).pack(side="left")
 
         tk.Label(
-            header_content, text="Consulta, filtra y exporta las pérdidas registradas en el sistema Yogufrut",
-            font=("Segoe UI", 9), bg=self.VERDE_OSCURO, fg="#A7F3D0"
+            header_content,
+            text="Consulta, filtra y exporta las pérdidas registradas",
+            font=("Segoe UI", 9),
+            bg=self.VERDE_SUAVE, fg=self.TEXTO_MUTED
         ).pack(side="right", padx=10)
 
         frame_kpis = tk.Frame(self.contenido, bg=self.FONDO_GENERAL)
         frame_kpis.pack(fill="x", padx=25, pady=(10, 10))
 
-        self._crear_kpi(frame_kpis, "REGISTROS ENCONTRADOS", self.var_kpi_total, "#0284C7", "📦")
-        self._crear_kpi(frame_kpis, "COSTO TOTAL ACUMULADO", self.var_kpi_costo, "#DC2626", "💰")
-        self._crear_kpi(frame_kpis, "PROMEDIO POR MERMA", self.var_kpi_promedio, "#D97706", "🏷️")
+        self._crear_kpi(
+            frame_kpis, "REGISTROS ENCONTRADOS",
+            self.var_kpi_total, ui_tema.VERDE_CLARO
+        )
+        self._crear_kpi(
+            frame_kpis, "COSTO TOTAL ACUMULADO",
+            self.var_kpi_costo, ui_tema.VERDE_MEDIO
+        )
+        self._crear_kpi(
+            frame_kpis, "PROMEDIO POR MERMA",
+            self.var_kpi_promedio, "#B7DCC7"
+        )
 
-        card_filtros = tk.Frame(self.contenido, bg=self.BLANCO, bd=1, relief="solid")
-        card_filtros.config(highlightbackground=self.GRIS_BORDE)
+        card_filtros = tk.Frame(
+            self.contenido, bg=self.BLANCO,
+            highlightbackground=self.GRIS_BORDE, highlightthickness=1
+        )
         card_filtros.pack(fill="x", padx=25, pady=(0, 10))
 
-        tk.Frame(card_filtros, bg=self.VERDE_OSCURO, height=4).pack(fill="x")
+        tk.Frame(card_filtros, bg=self.VERDE_CLARO, height=3).pack(fill="x")
 
         header_card = tk.Frame(card_filtros, bg=self.BLANCO)
         header_card.pack(fill="x", padx=16, pady=(10, 4))
         tk.Label(
-            header_card, text="🔍 Panel de Filtros y Búsqueda Avanzada",
+            header_card, text="Filtros y búsqueda",
             font=("Segoe UI", 11, "bold"), bg=self.BLANCO, fg=self.VERDE_OSCURO
         ).pack(anchor="w")
 
@@ -148,59 +164,65 @@ class ModuloHistorial:
         body_filtros.columnconfigure(3, weight=1)
 
         tk.Label(body_filtros, text="Desde:", font=("Segoe UI", 8, "bold"), bg=self.BLANCO, fg=self.TEXTO_MUTED).grid(row=0, column=0, sticky="w", pady=4, padx=(0, 6))
-        tk.Entry(body_filtros, textvariable=self.var_desde, font=("Segoe UI", 9), relief="solid", bd=1, bg="#F8FAFC", width=14).grid(row=0, column=1, sticky="w", pady=4, padx=(0, 20))
+        tk.Entry(body_filtros, textvariable=self.var_desde, font=("Segoe UI", 9), relief="flat", bd=0, bg="#F7FBF8",
+                                     highlightthickness=1,
+                                     highlightbackground=self.GRIS_BORDE,
+                                     highlightcolor=self.VERDE_CLARO, width=14).grid(row=0, column=1, sticky="w", pady=4, padx=(0, 20))
 
         tk.Label(body_filtros, text="Hasta:", font=("Segoe UI", 8, "bold"), bg=self.BLANCO, fg=self.TEXTO_MUTED).grid(row=0, column=2, sticky="w", pady=4, padx=(0, 6))
-        tk.Entry(body_filtros, textvariable=self.var_hasta, font=("Segoe UI", 9), relief="solid", bd=1, bg="#F8FAFC", width=14).grid(row=0, column=3, sticky="w", pady=4, padx=(0, 20))
+        tk.Entry(body_filtros, textvariable=self.var_hasta, font=("Segoe UI", 9), relief="flat", bd=0, bg="#F7FBF8",
+                                     highlightthickness=1,
+                                     highlightbackground=self.GRIS_BORDE,
+                                     highlightcolor=self.VERDE_CLARO, width=14).grid(row=0, column=3, sticky="w", pady=4, padx=(0, 20))
 
         f_fechas_rapidas = tk.Frame(body_filtros, bg=self.BLANCO)
         f_fechas_rapidas.grid(row=0, column=4, sticky="w", pady=4)
-        tk.Button(f_fechas_rapidas, text="📅 Hoy", font=("Segoe UI", 8, "bold"), bg=self.VERDE_SUAVE, fg=self.VERDE_OSCURO, relief="flat", cursor="hand2", command=self.filtrar_hoy).pack(side="left", padx=(0, 4), ipadx=6, ipady=2)
-        tk.Button(f_fechas_rapidas, text="📆 Este Mes", font=("Segoe UI", 8, "bold"), bg=self.VERDE_SUAVE, fg=self.VERDE_OSCURO, relief="flat", cursor="hand2", command=self.filtrar_mes_actual).pack(side="left", ipadx=6, ipady=2)
+        tk.Button(f_fechas_rapidas, text="Hoy", font=("Segoe UI", 8, "bold"), bg=self.VERDE_SUAVE, fg=self.VERDE_OSCURO, activebackground=self.VERDE_SUAVE, relief="flat", cursor="hand2", command=self.filtrar_hoy).pack(side="left", padx=(0, 4), ipadx=6, ipady=2)
+        tk.Button(f_fechas_rapidas, text="Este mes", font=("Segoe UI", 8, "bold"), bg=self.VERDE_SUAVE, fg=self.VERDE_OSCURO, relief="flat", cursor="hand2", command=self.filtrar_mes_actual).pack(side="left", ipadx=6, ipady=2)
 
         tk.Label(body_filtros, text="Producto:", font=("Segoe UI", 8, "bold"), bg=self.BLANCO, fg=self.TEXTO_MUTED).grid(row=1, column=0, sticky="w", pady=4, padx=(0, 6))
-        e_prod = tk.Entry(body_filtros, textvariable=self.var_producto, font=("Segoe UI", 9), relief="solid", bd=1, bg="#F8FAFC", width=22)
+        e_prod = tk.Entry(body_filtros, textvariable=self.var_producto, font=("Segoe UI", 9), relief="flat", bd=0, bg="#F7FBF8",
+                                     highlightthickness=1,
+                                     highlightbackground=self.GRIS_BORDE,
+                                     highlightcolor=self.VERDE_CLARO, width=22)
         e_prod.grid(row=1, column=1, sticky="w", pady=4, padx=(0, 20))
         e_prod.bind("<Return>", lambda e: self.cargar())
 
         tk.Label(body_filtros, text="Motivo:", font=("Segoe UI", 8, "bold"), bg=self.BLANCO, fg=self.TEXTO_MUTED).grid(row=1, column=2, sticky="w", pady=4, padx=(0, 6))
-        combo_motivo = ttk.Combobox(body_filtros, textvariable=self.var_motivo, values=["Todos"] + MOTIVOS, state="readonly", width=18, font=("Segoe UI", 9))
+        combo_motivo = ttk.Combobox(body_filtros, textvariable=self.var_motivo, values=["Todos"] + MOTIVOS, state="readonly", width=18, font=("Segoe UI", 9),
+            style="Tema.TCombobox")
         combo_motivo.grid(row=1, column=3, sticky="w", pady=4, padx=(0, 20))
         combo_motivo.bind("<<ComboboxSelected>>", lambda e: self.cargar())
 
         tk.Label(body_filtros, text="Tipo Merma:", font=("Segoe UI", 8, "bold"), bg=self.BLANCO, fg=self.TEXTO_MUTED).grid(row=2, column=0, sticky="w", pady=4, padx=(0, 6))
-        combo_tipo = ttk.Combobox(body_filtros, textvariable=self.var_tipo, values=["Todos"] + consultar_tipos_merma(), state="readonly", width=18, font=("Segoe UI", 9))
+        combo_tipo = ttk.Combobox(body_filtros, textvariable=self.var_tipo, values=["Todos"] + consultar_tipos_merma(), state="readonly", width=18, font=("Segoe UI", 9),
+            style="Tema.TCombobox")
         combo_tipo.grid(row=2, column=1, sticky="w", pady=4, padx=(0, 20))
         combo_tipo.bind("<<ComboboxSelected>>", lambda e: self.cargar())
 
         f_acciones = tk.Frame(body_filtros, bg=self.BLANCO)
         f_acciones.grid(row=2, column=2, columnspan=3, sticky="w", pady=4)
 
-        tk.Button(f_acciones, text="🔍 Buscar", font=("Segoe UI", 9, "bold"), bg=self.VERDE_MEDIO, fg=self.BLANCO, activebackground=self.VERDE_HOVER, relief="flat", cursor="hand2", command=self.cargar).pack(side="left", padx=(0, 8), ipadx=10, ipady=3)
-        tk.Button(f_acciones, text="🧹 Limpiar", font=("Segoe UI", 9, "bold"), bg="#E2E8F0", fg=self.TEXTO_MAIN, activebackground="#CBD5E1", relief="flat", cursor="hand2", command=self.limpiar).pack(side="left", padx=(0, 8), ipadx=8, ipady=3)
-        tk.Button(f_acciones, text="📥 Exportar CSV", font=("Segoe UI", 9, "bold"), bg=self.AZUL_BTN, fg=self.BLANCO, activebackground="#1D4ED8", relief="flat", cursor="hand2", command=self.exportar_csv).pack(side="left", ipadx=8, ipady=3)
+        ui_tema.boton(
+            f_acciones, "Buscar", self.cargar, principal=True,
+            font=("Segoe UI", 9, "bold")
+        ).pack(side="left", padx=(0, 8), ipadx=8, ipady=2)
+        ui_tema.boton(
+            f_acciones, "Limpiar", self.limpiar,
+            font=("Segoe UI", 9, "bold")
+        ).pack(side="left", padx=(0, 8), ipadx=6, ipady=2)
+        ui_tema.boton(
+            f_acciones, "Exportar CSV", self.exportar_csv,
+            font=("Segoe UI", 9, "bold")
+        ).pack(side="left", ipadx=6, ipady=2)
 
-        card_tabla = tk.Frame(self.contenido, bg=self.BLANCO, bd=1, relief="solid")
-        card_tabla.config(highlightbackground=self.GRIS_BORDE)
+        card_tabla = tk.Frame(
+            self.contenido, bg=self.BLANCO,
+            highlightbackground=self.GRIS_BORDE, highlightthickness=1
+        )
         card_tabla.pack(fill="both", expand=True, padx=25, pady=(0, 20))
 
-        tk.Frame(card_tabla, bg=self.VERDE_OSCURO, height=4).pack(fill="x")
-
-        style = ttk.Style()
-        style.theme_use("clam")
-        style.configure("Treeview", 
-                        background=self.BLANCO,
-                        foreground=self.TEXTO_MAIN,
-                        rowheight=28,
-                        font=("Segoe UI", 9),
-                        fieldbackground=self.BLANCO,
-                        borderwidth=0)
-        style.configure("Treeview.Heading",
-                        background=self.VERDE_OSCURO,
-                        foreground=self.BLANCO,
-                        font=("Segoe UI", 9, "bold"),
-                        relief="flat")
-        style.map("Treeview", background=[("selected", self.VERDE_MEDIO)], foreground=[("selected", self.BLANCO)])
+        tk.Frame(card_tabla, bg=self.VERDE_CLARO, height=3).pack(fill="x")
 
         marco, self.tabla = crear_tabla(d, card_tabla, [
             ("fecha", "Fecha y Hora", 130, "w"),
@@ -215,30 +237,32 @@ class ModuloHistorial:
         marco.pack(fill="both", expand=True, padx=12, pady=8)
         self.tabla.bind("<Double-1>", lambda e: self.ver_detalle())
 
-        self.tabla.tag_configure("par", background="#F8FAFC")
+        self.tabla.tag_configure("par", background="#F7FCF9")
         self.tabla.tag_configure("impar", background=self.BLANCO)
 
         tk.Label(
             card_tabla,
-            text="💡 Doble clic sobre cualquier registro para ver la ficha detallada con observaciones.",
+            text="Doble clic sobre un registro para ver la ficha detallada.",
             font=("Segoe UI", 8, "italic"), bg=self.BLANCO, fg=self.TEXTO_MUTED
         ).pack(anchor="w", padx=16, pady=(0, 10))
 
         self.cargar()
 
-    def _crear_kpi(self, padre, titulo, variable, color, icono):
-        card = tk.Frame(padre, bg=self.BLANCO, bd=1, relief="solid")
-        card.config(highlightbackground=self.GRIS_BORDE)
+    def _crear_kpi(self, padre, titulo, variable, color):
+        card = tk.Frame(
+            padre, bg=self.BLANCO,
+            highlightbackground=self.GRIS_BORDE, highlightthickness=1
+        )
         card.pack(side="left", fill="both", expand=True, padx=4)
 
-        borde = tk.Frame(card, bg=color, width=5)
+        borde = tk.Frame(card, bg=color, width=4)
         borde.pack(side="left", fill="y")
 
         info = tk.Frame(card, bg=self.BLANCO)
-        info.pack(side="left", fill="both", expand=True, padx=12, pady=8)
+        info.pack(side="left", fill="both", expand=True, padx=14, pady=10)
 
-        tk.Label(info, text=f"{icono} {titulo}", font=("Segoe UI", 8, "bold"), bg=self.BLANCO, fg=self.TEXTO_MUTED).pack(anchor="w")
-        tk.Label(info, textvariable=variable, font=("Segoe UI", 13, "bold"), bg=self.BLANCO, fg=self.TEXTO_MAIN).pack(anchor="w", pady=(2, 0))
+        tk.Label(info, text=titulo, font=("Segoe UI", 8, "bold"), bg=self.BLANCO, fg=self.TEXTO_MUTED).pack(anchor="w")
+        tk.Label(info, textvariable=variable, font=("Segoe UI", 14, "bold"), bg=self.BLANCO, fg=self.TEXTO_MAIN).pack(anchor="w", pady=(3, 0))
 
     def filtrar_hoy(self):
         hoy = date.today().isoformat()
@@ -339,12 +363,14 @@ class ModuloHistorial:
         top.transient(self.dashboard)
         top.grab_set()
 
-        header = tk.Frame(top, bg=self.VERDE_OSCURO)
+        header = tk.Frame(top, bg=self.VERDE_SUAVE)
         header.pack(fill="x")
-        tk.Label(header, text="📋 Ficha Detallada de Registro", font=("Segoe UI", 12, "bold"), bg=self.VERDE_OSCURO, fg=self.BLANCO).pack(pady=12)
+        tk.Label(header, text="Ficha detallada del registro", font=("Segoe UI", 12, "bold"), bg=self.VERDE_SUAVE, fg=self.VERDE_OSCURO).pack(pady=12)
 
-        card = tk.Frame(top, bg=self.BLANCO, bd=1, relief="solid")
-        card.config(highlightbackground=self.GRIS_BORDE)
+        card = tk.Frame(
+            top, bg=self.BLANCO,
+            highlightbackground=self.GRIS_BORDE, highlightthickness=1
+        )
         card.pack(fill="both", expand=True, padx=20, pady=15)
 
         detalles = [
@@ -368,13 +394,14 @@ class ModuloHistorial:
         
         lbl_obs = tk.Label(
             card, text=f['observaciones'] or 'Sin observaciones registradas.',
-            font=("Segoe UI", 9, "italic"), bg="#F8FAFC", fg=self.TEXTO_MAIN,
-            relief="solid", bd=1, padx=10, pady=8, justify="left", anchor="nw", wraplength=400
+            font=("Segoe UI", 9, "italic"), bg="#F7FBF8", fg=self.TEXTO_MAIN,
+            relief="flat", bd=0, padx=10, pady=8, justify="left", anchor="nw",
+            wraplength=400, highlightthickness=1,
+            highlightbackground=self.GRIS_BORDE
         )
         lbl_obs.pack(fill="both", expand=True, padx=15, pady=(0, 15))
 
-        tk.Button(
-            top, text="Cerrar Ficha", font=("Segoe UI", 9, "bold"),
-            bg=self.VERDE_OSCURO, fg=self.BLANCO, activebackground=self.VERDE_HOVER,
-            relief="flat", cursor="hand2", command=top.destroy
-        ).pack(pady=(0, 15), ipadx=25, ipady=5)
+        ui_tema.boton(
+            top, "Cerrar ficha", top.destroy, principal=True,
+            font=("Segoe UI", 9, "bold")
+        ).pack(pady=(0, 15), ipadx=20, ipady=3)

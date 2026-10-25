@@ -1,5 +1,6 @@
 import tkinter as tk
 
+import ui_tema
 from base_datos import obtener_conexion
 from ui_comunes import crear_boton, crear_tabla, crear_tarjeta_resumen
 
@@ -109,9 +110,9 @@ class ModuloInventario:
             bg=d.FONDO, fg=d.TEXTO
         ).pack(side="left")
 
-        entrada = tk.Entry(
-            barra, textvariable=self.busqueda, font=("Segoe UI", 11),
-            relief="solid", bd=1, width=28
+        entrada = ui_tema.entrada(
+            barra, textvariable=self.busqueda, font=("Segoe UI", 10),
+            width=28
         )
         entrada.pack(side="left", padx=(8, 12), ipady=4)
         entrada.bind("<KeyRelease>", lambda e: self.cargar())
@@ -120,7 +121,8 @@ class ModuloInventario:
             barra, text="Solo productos con alerta",
             variable=self.solo_alertas, command=self.cargar,
             font=("Segoe UI", 10), bg=d.FONDO, fg=d.TEXTO,
-            activebackground=d.FONDO, cursor="hand2"
+            activebackground=d.FONDO, selectcolor=d.BLANCO,
+            cursor="hand2", highlightthickness=0, bd=0
         )
         self.check_alertas.pack(side="left")
 
@@ -159,8 +161,8 @@ class ModuloInventario:
             ("estado", "Estado", 95, "center"),
         ])
 
-        self.tabla.tag_configure("bajo", background="#FFF4E0")
-        self.tabla.tag_configure("agotado", background="#FDECEA")
+        self.tabla.tag_configure("bajo", background="#FBF5E4")
+        self.tabla.tag_configure("agotado", background="#FBECEC")
 
         self.cambiar_vista("existencias")
 
@@ -181,8 +183,8 @@ class ModuloInventario:
         ):
             boton.configure(
                 bg=d.VERDE_CLARO if activo else d.BLANCO,
-                fg=d.BLANCO if activo else d.VERDE_OSCURO,
-                highlightthickness=0 if activo else 1
+                fg=d.VERDE_OSCURO,
+                highlightthickness=0
             )
 
         self.check_alertas.configure(

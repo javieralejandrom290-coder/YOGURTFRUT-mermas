@@ -3,6 +3,7 @@ import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox
 
+import ui_tema
 from ui_comunes import activar_filas_alternadas
 from base_datos import obtener_conexion, registrar_movimiento_inventario
 
@@ -34,25 +35,7 @@ class ModuloProductos:
         self.cargar_productos()
 
     def crear_boton(self, contenedor, texto, comando, principal=False):
-        d = self.dashboard
-
-        return tk.Button(
-            contenedor,
-            text=texto,
-            command=comando,
-            font=("Segoe UI", 10, "bold"),
-            bg=d.VERDE_CLARO if principal else d.BLANCO,
-            fg=d.BLANCO if principal else d.VERDE_OSCURO,
-            activebackground="#689F38" if principal else d.VERDE_SUAVE,
-            activeforeground=d.BLANCO if principal else d.VERDE_OSCURO,
-            relief="flat",
-            bd=0,
-            highlightbackground=d.BORDE,
-            highlightthickness=0 if principal else 1,
-            cursor="hand2",
-            padx=16,
-            pady=8
-        )
+        return ui_tema.boton(contenedor, texto, comando, principal=principal)
 
     def crear_barra_acciones(self):
         d = self.dashboard
@@ -69,12 +52,10 @@ class ModuloProductos:
             fg=d.TEXTO
         ).pack(side="left")
 
-        entrada = tk.Entry(
+        entrada = ui_tema.entrada(
             barra,
             textvariable=self.busqueda,
-            font=("Segoe UI", 11),
-            relief="solid",
-            bd=1,
+            font=("Segoe UI", 10),
             width=28
         )
         entrada.pack(side="left", padx=(8, 16), ipady=4)
@@ -89,7 +70,10 @@ class ModuloProductos:
             bg=d.FONDO,
             fg=d.TEXTO,
             activebackground=d.FONDO,
-            cursor="hand2"
+            selectcolor=d.BLANCO,
+            cursor="hand2",
+            highlightthickness=0,
+            bd=0
         ).pack(side="left")
 
         # Fila 2: acciones
@@ -97,7 +81,7 @@ class ModuloProductos:
         acciones.pack(fill="x", padx=30, pady=(0, 12))
 
         self.crear_boton(
-            acciones, "＋ Nuevo producto", self.nuevo_producto, principal=True
+            acciones, "Nuevo producto", self.nuevo_producto, principal=True
         ).pack(side="left")
 
         self.crear_boton(
@@ -160,7 +144,7 @@ class ModuloProductos:
                 anchor="w" if columna == "nombre" else "center"
             )
 
-        self.tabla.tag_configure("stock_bajo", background="#FDECEA")
+        self.tabla.tag_configure("stock_bajo", background="#FBECEC")
         activar_filas_alternadas(self.tabla)
         self.tabla.tag_configure("inactivo", foreground=d.TEXTO_SECUNDARIO)
 
@@ -364,8 +348,8 @@ class ModuloProductos:
             ).pack(anchor="w", padx=45)
 
         etiqueta("Nombre del producto")
-        campos["nombre"] = tk.Entry(
-            ventana, font=("Segoe UI", 11), relief="solid", bd=1
+        campos["nombre"] = ui_tema.entrada(
+            ventana, font=("Segoe UI", 10)
         )
         campos["nombre"].pack(fill="x", padx=45, pady=(4, 10))
 
@@ -373,7 +357,8 @@ class ModuloProductos:
         campos["categoria"] = ttk.Combobox(
             ventana,
             values=self.obtener_categorias(),
-            font=("Segoe UI", 11)
+            font=("Segoe UI", 10),
+            style="Tema.TCombobox"
         )
         campos["categoria"].pack(fill="x", padx=45, pady=(4, 10))
 
@@ -381,7 +366,8 @@ class ModuloProductos:
         campos["unidad"] = ttk.Combobox(
             ventana,
             values=UNIDADES,
-            font=("Segoe UI", 11)
+            font=("Segoe UI", 10),
+            style="Tema.TCombobox"
         )
         campos["unidad"].pack(fill="x", padx=45, pady=(4, 10))
 
@@ -391,8 +377,8 @@ class ModuloProductos:
             ("Stock mínimo", "stock_minimo")
         ]:
             etiqueta(texto)
-            campos[clave] = tk.Entry(
-                ventana, font=("Segoe UI", 11), relief="solid", bd=1
+            campos[clave] = ui_tema.entrada(
+                ventana, font=("Segoe UI", 10)
             )
             campos[clave].pack(fill="x", padx=45, pady=(4, 10))
 
@@ -523,18 +509,10 @@ class ModuloProductos:
             ventana.destroy()
             self.cargar_productos()
 
-        tk.Button(
+        ui_tema.boton(
             ventana,
-            text="GUARDAR CAMBIOS" if editando else "GUARDAR PRODUCTO",
-            command=guardar,
-            font=("Segoe UI", 10, "bold"),
-            bg=d.VERDE_CLARO,
-            fg=d.BLANCO,
-            activebackground="#689F38",
-            activeforeground=d.BLANCO,
-            relief="flat",
-            cursor="hand2",
-            pady=10
+            "GUARDAR CAMBIOS" if editando else "GUARDAR PRODUCTO",
+            guardar, principal=True
         ).pack(fill="x", padx=45, pady=(8, 20))
 
         ventana.bind("<Return>", lambda evento: guardar())

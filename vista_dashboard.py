@@ -3,7 +3,9 @@ from tkinter import ttk, messagebox
 from datetime import date, timedelta
 
 import base_datos
+import ui_tema
 from base_datos import obtener_conexion
+from ui_comunes import crear_logo
 from vista_productos import ModuloProductos
 from vista_mermas import RegistrarMermaView
 from vista_inventario import ModuloInventario, consultar_inventario
@@ -28,20 +30,23 @@ class DashboardApp:
         if base_datos.RUTA_BASE_DATOS.name != "mermas.db":
             titulo += "  [BASE DE PRUEBA]"
         self.root.title(titulo)
-        self.root.geometry("1200x720")
-        self.root.minsize(1000, 620)
-        self.root.configure(bg="#F3F6F4")
+        self.root.geometry("1240x760")
+        self.root.minsize(1040, 660)
+        self.root.configure(bg=ui_tema.FONDO)
 
-        # Tonos ajustados para que el menú lateral combine con el verde superior
-        self.VERDE_OSCURO = "#0F2A22"
-        self.VERDE_HOVER = "#1B4D3E"
-        self.VERDE_CLARO = "#7CB342"
-        self.VERDE_SUAVE = "#E8F3E5"
-        self.BLANCO = "#FFFFFF"
-        self.FONDO = "#F3F6F4"
-        self.TEXTO = "#263238"
-        self.TEXTO_SECUNDARIO = "#546E7A"
-        self.BORDE = "#CFD8DC"
+        # Paleta pastel compartida con el resto de pantallas
+        self.VERDE_OSCURO = ui_tema.VERDE_OSCURO
+        self.VERDE_HOVER = ui_tema.VERDE_HOVER
+        self.VERDE_CLARO = ui_tema.VERDE_CLARO
+        self.VERDE_PRIMARIO = ui_tema.VERDE_PRIMARIO
+        self.VERDE_SUAVE = ui_tema.VERDE_SUAVE
+        self.VERDE_ACTIVO = ui_tema.VERDE_ACTIVO
+        self.BLANCO = ui_tema.BLANCO
+        self.FONDO = ui_tema.FONDO
+        self.FONDO_SUAVE = ui_tema.FONDO_SUAVE
+        self.TEXTO = ui_tema.TEXTO
+        self.TEXTO_SECUNDARIO = ui_tema.TEXTO_SECUNDARIO
+        self.BORDE = ui_tema.BORDE
 
         self.configurar_estilos()
         self.crear_menu_lateral()
@@ -52,22 +57,22 @@ class DashboardApp:
         self.mostrar_inicio()
 
     def configurar_estilos(self):
-        estilo = ttk.Style()
-        estilo.theme_use("clam")
+        ui_tema.aplicar_tema(self.root)
 
+        estilo = ttk.Style()
         estilo.configure(
             "Mermas.Treeview",
             background=self.BLANCO,
             foreground=self.TEXTO,
             fieldbackground=self.BLANCO,
-            rowheight=35,
+            rowheight=40,
             borderwidth=0,
             font=("Segoe UI", 10)
         )
 
         estilo.configure(
             "Mermas.Treeview.Heading",
-            background="#E8EFEA",
+            background=self.VERDE_SUAVE,
             foreground=self.VERDE_OSCURO,
             font=("Segoe UI", 10, "bold"),
             padding=10,
@@ -76,123 +81,174 @@ class DashboardApp:
 
         estilo.map(
             "Mermas.Treeview",
-            background=[("selected", self.VERDE_SUAVE)],
+            background=[("selected", self.VERDE_ACTIVO)],
             foreground=[("selected", self.VERDE_OSCURO)]
         )
 
     def crear_menu_lateral(self):
         self.menu = tk.Frame(
             self.root,
-            bg=self.VERDE_OSCURO,
-            width=240
+            bg=self.BLANCO,
+            width=252,
+            highlightbackground=self.BORDE,
+            highlightthickness=1,
+            bd=0,
         )
         self.menu.pack(side="left", fill="y")
         self.menu.pack_propagate(False)
 
+        # Marca: logo oficial + nombre del sistema
+        marca = tk.Frame(self.menu, bg=self.BLANCO)
+        marca.pack(fill="x", padx=20, pady=(18, 14))
+
+        self.logo_menu = crear_logo(marca, bg=self.BLANCO, alto=44)
+        self.logo_menu.pack(side="left")
+
+        textos_marca = tk.Frame(marca, bg=self.BLANCO)
+        textos_marca.pack(side="left", padx=(10, 0))
+
         tk.Label(
-            self.menu,
+            textos_marca,
             text="YOGUFRUT",
-            font=("Segoe UI", 22, "bold"),
-            bg=self.VERDE_OSCURO,
-            fg=self.BLANCO
-        ).pack(pady=(28, 2))
+            font=("Segoe UI", 15, "bold"),
+            bg=self.BLANCO,
+            fg=self.VERDE_OSCURO,
+        ).pack(anchor="w")
 
         tk.Label(
-            self.menu,
+            textos_marca,
             text="CONTROL DE MERMAS",
-            font=("Segoe UI", 9, "bold"),
-            bg=self.VERDE_OSCURO,
-            fg="#A5D6A7"
-        ).pack(pady=(0, 30))
+            font=("Segoe UI", 7, "bold"),
+            bg=self.BLANCO,
+            fg=self.TEXTO_SECUNDARIO,
+        ).pack(anchor="w", pady=(2, 0))
 
-        opciones = [
-            ("⌂", "Inicio", self.mostrar_inicio),
-            ("▣", "Productos", self.abrir_productos),
-            ("⛟", "Proveedores", self.abrir_proveedores),
-            ("⊕", "Compras", self.abrir_compras),
-            ("＋", "Registrar merma", self.abrir_mermas),
-            ("▤", "Inventario", self.abrir_inventario),
-            ("◷", "Historial", self.abrir_historial),
-            ("▥", "Reportes", self.abrir_reportes),
-            ("☺", "Empleados", self.abrir_empleados),
+        tk.Frame(self.menu, bg=self.BORDE, height=1).pack(
+            fill="x", padx=20, pady=(0, 8)
+        )
+
+        grupos = [
+            ("PRINCIPAL", [
+                ("Inicio", self.mostrar_inicio),
+            ]),
+            ("GESTIÓN", [
+                ("Productos", self.abrir_productos),
+                ("Proveedores", self.abrir_proveedores),
+                ("Compras", self.abrir_compras),
+                ("Registrar merma", self.abrir_mermas),
+                ("Inventario", self.abrir_inventario),
+                ("Historial", self.abrir_historial),
+                ("Reportes", self.abrir_reportes),
+            ]),
+            ("PERSONAL", [
+                ("Empleados", self.abrir_empleados),
+            ]),
         ]
 
         # Solo los administradores manejan las cuentas del sistema
         if self.rol == "Administrador":
-            opciones.append(("⚿", "Usuarios", self.abrir_usuarios))
+            grupos[-1][1].append(("Usuarios", self.abrir_usuarios))
 
         self.botones_menu = {}
         self.seccion_activa = None
-        self.VERDE_ACTIVO = "#2B6F57"
 
-        for icono, texto, comando in opciones:
-            boton = tk.Button(
+        for titulo_grupo, opciones in grupos:
+            tk.Label(
                 self.menu,
-                text=f"  {icono}    {texto}",
-                command=comando,
-                font=("Segoe UI", 11, "bold"),
+                text=titulo_grupo,
+                font=("Segoe UI", 7, "bold"),
+                bg=self.BLANCO,
+                fg=self.TEXTO_SECUNDARIO,
                 anchor="w",
-                bg=self.VERDE_OSCURO,
-                fg=self.BLANCO,
-                activebackground=self.VERDE_HOVER,
-                activeforeground=self.BLANCO,
-                relief="flat",
-                bd=0,
-                cursor="hand2",
-                padx=15,
-                pady=8
-            )
-            boton.pack(fill="x", padx=10, pady=3)
-            self.botones_menu[texto] = boton
+            ).pack(fill="x", padx=24, pady=(12, 4))
 
-            boton.bind(
-                "<Enter>",
-                lambda evento, b=boton, t=texto:
-                    b.configure(bg=self.color_boton_menu(t, pasando=True))
-            )
-            boton.bind(
-                "<Leave>",
-                lambda evento, b=boton, t=texto:
-                    b.configure(bg=self.color_boton_menu(t))
-            )
+            for texto, comando in opciones:
+                boton = tk.Button(
+                    self.menu,
+                    text=texto,
+                    command=comando,
+                    font=("Segoe UI", 10),
+                    anchor="w",
+                    bg=self.BLANCO,
+                    fg=self.TEXTO,
+                    activebackground=self.VERDE_SUAVE,
+                    activeforeground=self.VERDE_OSCURO,
+                    relief="flat",
+                    bd=0,
+                    highlightthickness=0,
+                    cursor="hand2",
+                    padx=18,
+                    pady=8,
+                )
+                boton.pack(fill="x", padx=14, pady=1)
+                self.botones_menu[texto] = boton
 
-        separador = tk.Frame(
-            self.menu,
-            bg="#2C5E4B",
-            height=1
+                boton.bind(
+                    "<Enter>",
+                    lambda evento, b=boton, t=texto:
+                        b.configure(bg=self.color_boton_menu(t, pasando=True))
+                )
+                boton.bind(
+                    "<Leave>",
+                    lambda evento, b=boton, t=texto:
+                        b.configure(bg=self.color_boton_menu(t))
+                )
+
+        # Tarjeta del usuario en la parte inferior
+        usuario = tk.Frame(self.menu, bg=self.FONDO_SUAVE)
+        usuario.pack(side="bottom", fill="x", padx=16, pady=18)
+
+        inicial = tk.Canvas(
+            usuario, width=38, height=38, bg=self.FONDO_SUAVE,
+            highlightthickness=0
         )
-        separador.pack(side="bottom", fill="x", padx=18, pady=(0, 10))
+        inicial.pack(side="left", padx=(10, 8), pady=10)
+        inicial.create_oval(
+            1, 1, 37, 37, fill=self.VERDE_CLARO, outline=""
+        )
+        inicial.create_text(
+            19, 19, text=(self.nombre.strip()[:1] or "U").upper(),
+            fill=self.VERDE_OSCURO, font=("Segoe UI", 12, "bold")
+        )
+
+        datos = tk.Frame(usuario, bg=self.FONDO_SUAVE)
+        datos.pack(side="left", fill="x", expand=True, pady=10)
 
         tk.Label(
-            self.menu,
-            text=f"  {self.nombre}",
-            font=("Segoe UI", 10, "bold"),
-            bg=self.VERDE_OSCURO,
-            fg=self.BLANCO,
+            datos,
+            text=self.nombre,
+            font=("Segoe UI", 9, "bold"),
+            bg=self.FONDO_SUAVE,
+            fg=self.VERDE_OSCURO,
             anchor="w",
-            wraplength=205
-        ).pack(side="bottom", anchor="w", padx=15, pady=(0, 4))
+            wraplength=150,
+        ).pack(anchor="w")
 
         tk.Label(
-            self.menu,
-            text=f"  {self.rol}",
-            font=("Segoe UI", 9),
-            bg=self.VERDE_OSCURO,
-            fg="#A5D6A7",
-            anchor="w"
-        ).pack(side="bottom", anchor="w", padx=15, pady=(0, 15))
+            datos,
+            text=self.rol,
+            font=("Segoe UI", 8),
+            bg=self.FONDO_SUAVE,
+            fg=self.TEXTO_SECUNDARIO,
+            anchor="w",
+        ).pack(anchor="w", pady=(2, 0))
 
     def color_boton_menu(self, texto, pasando=False):
         """Color del botón del menú: activo, con el mouse encima o normal."""
         if texto == self.seccion_activa:
             return self.VERDE_ACTIVO
-        return self.VERDE_HOVER if pasando else self.VERDE_OSCURO
+        return self.VERDE_SUAVE if pasando else self.BLANCO
 
     def resaltar_menu(self, texto):
         """Marca en el menú lateral la sección que se está viendo."""
         self.seccion_activa = texto
         for nombre, boton in self.botones_menu.items():
-            boton.configure(bg=self.color_boton_menu(nombre))
+            activo = nombre == texto
+            boton.configure(
+                bg=self.color_boton_menu(nombre),
+                fg=self.VERDE_OSCURO if activo else self.TEXTO,
+                font=("Segoe UI", 10, "bold" if activo else "normal"),
+            )
 
     def crear_contenido(self):
         self.contenido = tk.Frame(
@@ -217,23 +273,33 @@ class DashboardApp:
             self.contenido,
             bg=self.FONDO
         )
-        encabezado.pack(fill="x", padx=30, pady=(28, 20))
+        encabezado.pack(fill="x", padx=30, pady=(26, 20))
+
+        fila = tk.Frame(encabezado, bg=self.FONDO)
+        fila.pack(fill="x")
+
+        tk.Frame(
+            fila, bg=self.VERDE_CLARO, width=4, height=42
+        ).pack(side="left", padx=(0, 12))
+
+        textos = tk.Frame(fila, bg=self.FONDO)
+        textos.pack(side="left", fill="x", expand=True)
 
         tk.Label(
-            encabezado,
+            textos,
             text=titulo,
-            font=("Segoe UI", 24, "bold"),
+            font=("Segoe UI", 22, "bold"),
             bg=self.FONDO,
             fg=self.VERDE_OSCURO
         ).pack(anchor="w")
 
         tk.Label(
-            encabezado,
+            textos,
             text=descripcion,
-            font=("Segoe UI", 10),
+            font=("Segoe UI", 9),
             bg=self.FONDO,
             fg=self.TEXTO_SECUNDARIO
-        ).pack(anchor="w", pady=(5, 0))
+        ).pack(anchor="w", pady=(3, 0))
 
     def obtener_estadisticas(self):
         estadisticas = {
@@ -296,16 +362,16 @@ class DashboardApp:
         tk.Frame(
             tarjeta,
             bg=self.VERDE_CLARO,
-            height=4
+            height=3
         ).pack(fill="x")
 
         tk.Label(
             tarjeta,
             text=titulo,
-            font=("Segoe UI", 10, "bold"),
+            font=("Segoe UI", 9, "bold"),
             bg=self.BLANCO,
             fg=self.TEXTO_SECUNDARIO
-        ).pack(anchor="w", padx=16, pady=(15, 5))
+        ).pack(anchor="w", padx=18, pady=(15, 5))
 
         tk.Label(
             tarjeta,
@@ -313,15 +379,15 @@ class DashboardApp:
             font=("Segoe UI", 23, "bold"),
             bg=self.BLANCO,
             fg=self.VERDE_OSCURO
-        ).pack(anchor="w", padx=16)
+        ).pack(anchor="w", padx=18)
 
         tk.Label(
             tarjeta,
             text=detalle,
-            font=("Segoe UI", 9),
+            font=("Segoe UI", 8),
             bg=self.BLANCO,
             fg=self.TEXTO_SECUNDARIO
-        ).pack(anchor="w", padx=16, pady=(4, 16))
+        ).pack(anchor="w", padx=18, pady=(5, 16))
 
         return tarjeta
 
@@ -447,7 +513,8 @@ class DashboardApp:
         barra = ttk.Scrollbar(
             tabla_frame,
             orient="vertical",
-            command=tabla.yview
+            command=tabla.yview,
+            style="Tema.Vertical.TScrollbar"
         )
         tabla.configure(yscrollcommand=barra.set)
 
@@ -541,8 +608,8 @@ class DashboardApp:
         ])
         marco_s.pack(fill="x")
         tabla_s.configure(height=3)
-        tabla_s.tag_configure("bajo", background="#FFF4E0")
-        tabla_s.tag_configure("agotado", background="#FDECEA")
+        tabla_s.tag_configure("bajo", background="#FBF5E4")
+        tabla_s.tag_configure("agotado", background="#FBECEC")
 
         try:
             alertas = consultar_inventario(solo_alertas=True)

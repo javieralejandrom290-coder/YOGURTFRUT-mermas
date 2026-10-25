@@ -2,6 +2,7 @@ import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox
 
+import ui_tema
 from base_datos import obtener_conexion
 from ui_comunes import crear_boton, crear_tabla
 
@@ -50,9 +51,9 @@ class ModuloCatalogo:
             bg=d.FONDO, fg=d.TEXTO
         ).pack(side="left")
 
-        entrada = tk.Entry(
-            barra, textvariable=self.busqueda, font=("Segoe UI", 11),
-            relief="solid", bd=1, width=28
+        entrada = ui_tema.entrada(
+            barra, textvariable=self.busqueda, font=("Segoe UI", 10),
+            width=28
         )
         entrada.pack(side="left", padx=(8, 12), ipady=4)
         entrada.bind("<KeyRelease>", lambda evento: self.cargar())
@@ -61,7 +62,8 @@ class ModuloCatalogo:
             barra, text="Mostrar inactivos",
             variable=self.mostrar_inactivos, command=self.cargar,
             font=("Segoe UI", 10), bg=d.FONDO, fg=d.TEXTO,
-            activebackground=d.FONDO, cursor="hand2"
+            activebackground=d.FONDO, selectcolor=d.BLANCO,
+            cursor="hand2", highlightthickness=0, bd=0
         ).pack(side="left")
 
         crear_boton(
@@ -71,7 +73,7 @@ class ModuloCatalogo:
             d, barra, "Editar", self.editar
         ).pack(side="right", padx=8)
         crear_boton(
-            d, barra, f"＋ Nuevo {self.NOMBRE_SINGULAR}", self.nuevo,
+            d, barra, f"Nuevo {self.NOMBRE_SINGULAR}", self.nuevo,
             principal=True
         ).pack(side="right")
 
@@ -225,11 +227,12 @@ class ModuloCatalogo:
             if campo.get("opciones"):
                 entrada = ttk.Combobox(
                     ventana, values=campo["opciones"],
-                    state="readonly", font=("Segoe UI", 11)
+                    state="readonly", font=("Segoe UI", 10),
+                    style="Tema.TCombobox"
                 )
             else:
-                entrada = tk.Entry(
-                    ventana, font=("Segoe UI", 11), relief="solid", bd=1
+                entrada = ui_tema.entrada(
+                    ventana, font=("Segoe UI", 10)
                 )
             entrada.pack(fill="x", padx=45, pady=(4, 10))
 
@@ -293,14 +296,10 @@ class ModuloCatalogo:
             ventana.destroy()
             self.cargar()
 
-        tk.Button(
+        ui_tema.boton(
             ventana,
-            text="GUARDAR CAMBIOS" if editando else "GUARDAR",
-            command=guardar,
-            font=("Segoe UI", 10, "bold"),
-            bg=d.VERDE_CLARO, fg=d.BLANCO,
-            activebackground="#689F38", activeforeground=d.BLANCO,
-            relief="flat", cursor="hand2", pady=10
+            "GUARDAR CAMBIOS" if editando else "GUARDAR",
+            guardar, principal=True
         ).pack(fill="x", padx=45, pady=(8, 20))
 
         ventana.bind("<Return>", lambda evento: guardar())
