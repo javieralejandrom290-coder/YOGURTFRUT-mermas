@@ -87,5 +87,26 @@ def crear_tarjeta_resumen(d, contenedor, titulo, variable):
         bg=d.BLANCO,
         fg=d.VERDE_OSCURO
     ).pack(anchor="w", padx=16, pady=(0, 14))
+    
+    
+def activar_filas_alternadas(tabla):
+    """
+    Alterna los colores de las filas de una tabla Treeview.
+    No modifica los datos ni afecta las demás funciones.
+    """
+    tabla.tag_configure(
+        "fila_par",
+        background="#FFFFFF"
+    )
+
+    tabla.tag_configure(
+        "fila_impar",
+        background="#F1F7F2"
+    )
+
+    for indice, elemento in enumerate(tabla.get_children()):
+        etiqueta = "fila_par" if indice % 2 == 0 else "fila_impar"
+        tabla.item(elemento, tags=(etiqueta,))
+
 
     return tarjeta
