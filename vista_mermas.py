@@ -3,10 +3,15 @@ from tkinter import ttk, messagebox
 from datetime import date, datetime
 
 from base_datos import obtener_conexion, registrar_movimiento_inventario
+from ui_comunes import crear_tabla, crear_campo_fecha
 
 
 class RegistrarMermaView:
-    """Apartado 'Registrar merma'. Se dibuja dentro del contenido del dashboard."""
+    """Apartado 'Registrar merma'. Se dibuja dentro del contenido del dashboard.
+
+    Usa el mismo diseño que Compras e Historial: encabezado verde, tarjetas
+    de indicadores, tarjetas con barra superior y tablas con filas alternadas.
+    """
 
     MOTIVOS = [
         "Caducidad",
@@ -18,14 +23,28 @@ class RegistrarMermaView:
         "Otro",
     ]
 
+    # Paleta compartida con Compras e Historial
+    VERDE_OSCURO = "#064E3B"
+    VERDE_MEDIO = "#059669"
+    VERDE_SUAVE = "#DCFCE7"
+    VERDE_HOVER = "#047857"
+    FONDO_GENERAL = "#F0FDF4"
+    BLANCO = "#FFFFFF"
+    TEXTO_MAIN = "#0F172A"
+    TEXTO_MUTED = "#64748B"
+    GRIS_BORDE = "#CBD5E1"
+    CAMPO = "#F8FAFC"
     ROJO = "#C62828"
 
     def __init__(self, app):
-        # app = instancia de DashboardApp (de ahí tomamos colores, usuario, etc.)
+        # app = instancia de DashboardApp (de ahí tomamos el contenedor, usuario, etc.)
         self.app = app
         self.productos = {}
         self.tipos_merma = {}
         self.empleados = {}
+        self.var_kpi_hoy = tk.StringVar(value="0")
+        self.var_kpi_costo_hoy = tk.StringVar(value="$0.00")
+        self.var_kpi_costo_mes = tk.StringVar(value="$0.00")
 
     # ------------------------------------------------------------------
     # Pantalla principal
@@ -33,10 +52,7 @@ class RegistrarMermaView:
     def mostrar(self):
         app = self.app
         app.limpiar_contenido()
-        app.titulo_pagina(
-            "Registrar merma",
-            "Registra las pérdidas de productos de la heladería."
-        )
+        app.contenido.config(bg=self.FONDO_GENERAL)
 
         try:
             self.cargar_productos()
@@ -48,9 +64,81 @@ class RegistrarMermaView:
             )
             return
 
-        self.construir_formulario()
-        self.construir_tabla_reciente()
+        self.construir_encabezado()
+
+        frame_kpis = tk.Frame(app.contenido, bg=self.FONDO_GENERAL)
+        frame_kpis.pack(fill="x", padx=25, pady=(10, 10))
+        self._crear_kpi(frame_kpis, "MERMAS REGISTRADAS HOY", self.var_kpi_hoy, "#0284C7", "📦")
+        self._crear_kpi(frame_kpis, "COSTO PERDIDO HOY", self.var_kpi_costo_hoy, "#D97706", "🏷️")
+        self._crear_kpi(frame_kpis, "COSTO PERDIDO ESTE MES", self.var_kpi_costo_mes, "#DC2626", "💰")
+
+        cuerpo = tk.Frame(app.contenido, bg=self.FONDO_GENERAL)
+        cuerpo.pack(fill="both", expand=True, padx=25, pady=(0, 20))
+        cuerpo.columnconfigure(0, weight=3, uniform="c")
+        cuerpo.columnconfigure(1, weight=2, uniform="c")
+        cuerpo.rowconfigure(0, weight=1)
+
+        self.construir_formulario(cuerpo)
+
+        derecha = tk.Frame(cuerpo, bg=self.FONDO_GENERAL)
+        derecha.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
+        self.construir_resumen(derecha)
+        self.construir_tabla_reciente(derecha)
+
         self.actualizar_resumen()
+
+    def construir_encabezado(self):
+        header = tk.Frame(self.app.contenido, bg=self.VERDE_OSCURO, height=65)
+        header.pack(fill="x")
+        header.pack_propagate(False)
+
+        contenido = tk.Frame(header, bg=self.VERDE_OSCURO)
+        contenido.pack(fill="both", expand=True, padx=25, pady=12)
+
+        tk.Label(
+            contenido, text="🗑️ Registro de Mermas",
+            font=("Segoe UI", 15, "bold"), bg=self.VERDE_OSCURO, fg=self.BLANCO
+        ).pack(side="left")
+
+        tk.Label(
+            contenido,
+            text="Registra las pérdidas de productos de la heladería Yogufrut",
+            font=("Segoe UI", 9), bg=self.VERDE_OSCURO, fg="#A7F3D0"
+        ).pack(side="right", padx=10)
+
+    def _crear_kpi(self, padre, titulo, variable, color, icono):
+        card = tk.Frame(padre, bg=self.BLANCO, bd=1, relief="solid")
+        card.config(highlightbackground=self.GRIS_BORDE)
+        card.pack(side="left", fill="both", expand=True, padx=4)
+
+        tk.Frame(card, bg=color, width=5).pack(side="left", fill="y")
+
+        info = tk.Frame(card, bg=self.BLANCO)
+        info.pack(side="left", fill="both", expand=True, padx=12, pady=8)
+
+        tk.Label(
+            info, text=f"{icono} {titulo}", font=("Segoe UI", 8, "bold"),
+            bg=self.BLANCO, fg=self.TEXTO_MUTED
+        ).pack(anchor="w")
+        tk.Label(
+            info, textvariable=variable, font=("Segoe UI", 13, "bold"),
+            bg=self.BLANCO, fg=self.TEXTO_MAIN
+        ).pack(anchor="w", pady=(2, 0))
+
+    def _crear_tarjeta(self, padre, titulo):
+        """Tarjeta blanca con barra verde superior y título, como en Compras."""
+        tarjeta = tk.Frame(padre, bg=self.BLANCO, bd=1, relief="solid")
+        tarjeta.config(highlightbackground=self.GRIS_BORDE)
+
+        tk.Frame(tarjeta, bg=self.VERDE_OSCURO, height=4).pack(fill="x")
+
+        encabezado = tk.Frame(tarjeta, bg=self.BLANCO)
+        encabezado.pack(fill="x", padx=16, pady=(12, 6))
+        tk.Label(
+            encabezado, text=titulo, font=("Segoe UI", 11, "bold"),
+            bg=self.BLANCO, fg=self.VERDE_OSCURO
+        ).pack(anchor="w")
+        return tarjeta
 
     # ------------------------------------------------------------------
     # Datos
@@ -81,61 +169,67 @@ class RegistrarMermaView:
                 )
             }
 
+    def cargar_indicadores(self):
+        hoy = date.today()
+        inicio_mes = hoy.replace(day=1).isoformat()
+        try:
+            with obtener_conexion() as conexion:
+                dia = conexion.execute(
+                    """
+                    SELECT COUNT(*) AS registros,
+                           COALESCE(SUM(costo_total), 0) AS costo
+                    FROM mermas
+                    WHERE date(fecha) = date(?)
+                    """,
+                    (hoy.isoformat(),)
+                ).fetchone()
+                mes = conexion.execute(
+                    """
+                    SELECT COALESCE(SUM(costo_total), 0) AS costo
+                    FROM mermas
+                    WHERE date(fecha) >= date(?) AND date(fecha) <= date(?)
+                    """,
+                    (inicio_mes, hoy.isoformat())
+                ).fetchone()
+        except Exception:
+            return
+
+        self.var_kpi_hoy.set(f"{dia['registros']:,}")
+        self.var_kpi_costo_hoy.set(f"${dia['costo']:,.2f}")
+        self.var_kpi_costo_mes.set(f"${mes['costo']:,.2f}")
+
     # ------------------------------------------------------------------
     # Formulario
     # ------------------------------------------------------------------
-    def etiqueta(self, padre, texto, fila, columna, columnspan=1, padx=0):
-        app = self.app
+    def etiqueta(self, padre, texto, fila, columna, columnspan=1, pady=(8, 2)):
         etiqueta = tk.Label(
-            padre,
-            text=texto,
-            font=("Segoe UI", 10, "bold"),
-            bg=app.BLANCO,
-            fg=app.TEXTO,
-            anchor="w"
+            padre, text=texto, font=("Segoe UI", 8, "bold"),
+            bg=self.BLANCO, fg=self.TEXTO_MUTED, anchor="w"
         )
         etiqueta.grid(
             row=fila, column=columna, columnspan=columnspan,
-            sticky="w", padx=padx, pady=(10, 4)
+            sticky="w", padx=4, pady=pady
         )
         return etiqueta
 
     def crear_entrada(self, padre, variable):
-        app = self.app
         return tk.Entry(
-            padre,
-            textvariable=variable,
-            font=("Segoe UI", 12),
-            relief="flat",
-            bd=0,
-            bg=app.BLANCO,
-            fg=app.TEXTO,
-            highlightthickness=1,
-            highlightbackground=app.BORDE,
-            highlightcolor=app.VERDE_CLARO
+            padre, textvariable=variable, font=("Segoe UI", 10),
+            relief="solid", bd=1, bg=self.CAMPO, fg=self.TEXTO_MAIN
         )
 
-    def construir_formulario(self):
-        app = self.app
-
-        cuerpo = tk.Frame(app.contenido, bg=app.FONDO)
-        cuerpo.pack(fill="x", padx=30)
-        cuerpo.columnconfigure(0, weight=3)
-        cuerpo.columnconfigure(1, weight=2)
-
-        # ---------- Tarjeta del formulario ----------
-        tarjeta = tk.Frame(
-            cuerpo,
-            bg=app.BLANCO,
-            highlightbackground=app.BORDE,
-            highlightthickness=1
+    def crear_combo(self, padre, variable, valores):
+        return ttk.Combobox(
+            padre, textvariable=variable, values=valores,
+            state="readonly", font=("Segoe UI", 10)
         )
+
+    def construir_formulario(self, cuerpo):
+        tarjeta = self._crear_tarjeta(cuerpo, "📝 Nueva Merma")
         tarjeta.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
 
-        tk.Frame(tarjeta, bg=app.VERDE_CLARO, height=4).pack(fill="x")
-
-        form = tk.Frame(tarjeta, bg=app.BLANCO)
-        form.pack(fill="both", expand=True, padx=22, pady=(4, 18))
+        form = tk.Frame(tarjeta, bg=self.BLANCO)
+        form.pack(fill="both", expand=True, padx=16, pady=(0, 6))
         form.columnconfigure(0, weight=1, uniform="col")
         form.columnconfigure(1, weight=1, uniform="col")
 
@@ -147,152 +241,89 @@ class RegistrarMermaView:
         self.var_fecha = tk.StringVar(value=date.today().isoformat())
 
         # Fila 1: producto y cantidad
-        self.etiqueta(form, "PRODUCTO", 0, 0, padx=(0, 10))
-        self.lbl_cantidad = self.etiqueta(form, "CANTIDAD", 0, 1, padx=(10, 0))
+        self.etiqueta(form, "PRODUCTO:", 0, 0, pady=(2, 2))
+        self.lbl_cantidad = self.etiqueta(form, "CANTIDAD:", 0, 1, pady=(2, 2))
 
-        self.cb_producto = ttk.Combobox(
-            form,
-            textvariable=self.var_producto,
-            values=list(self.productos.keys()),
-            state="readonly",
-            font=("Segoe UI", 11)
+        self.cb_producto = self.crear_combo(
+            form, self.var_producto, list(self.productos.keys())
         )
-        self.cb_producto.grid(
-            row=1, column=0, sticky="ew", padx=(0, 10), ipady=5
-        )
+        self.cb_producto.grid(row=1, column=0, sticky="ew", padx=4, ipady=3)
         self.cb_producto.bind(
-            "<<ComboboxSelected>>",
-            lambda evento: self.actualizar_resumen()
+            "<<ComboboxSelected>>", lambda evento: self.actualizar_resumen()
         )
 
         self.entrada_cantidad = self.crear_entrada(form, self.var_cantidad)
-        self.entrada_cantidad.grid(
-            row=1, column=1, sticky="ew", padx=(10, 0), ipady=6
-        )
+        self.entrada_cantidad.grid(row=1, column=1, sticky="ew", padx=4, ipady=4)
         self.var_cantidad.trace_add(
             "write", lambda *args: self.actualizar_resumen()
         )
 
         # Fila 2: tipo de merma y empleado
-        self.etiqueta(form, "TIPO DE MERMA", 2, 0, padx=(0, 10))
-        self.etiqueta(form, "EMPLEADO QUE LA REPORTA", 2, 1, padx=(10, 0))
+        self.etiqueta(form, "TIPO DE MERMA:", 2, 0)
+        self.etiqueta(form, "EMPLEADO QUE LA REPORTA:", 2, 1)
 
-        self.cb_tipo = ttk.Combobox(
-            form,
-            textvariable=self.var_tipo,
-            values=list(self.tipos_merma.keys()),
-            state="readonly",
-            font=("Segoe UI", 11)
+        self.cb_tipo = self.crear_combo(
+            form, self.var_tipo, list(self.tipos_merma.keys())
         )
-        self.cb_tipo.grid(
-            row=3, column=0, sticky="ew", padx=(0, 10), ipady=5
-        )
+        self.cb_tipo.grid(row=3, column=0, sticky="ew", padx=4, ipady=3)
 
-        self.cb_empleado = ttk.Combobox(
-            form,
-            textvariable=self.var_empleado,
-            values=list(self.empleados.keys()),
-            state="readonly",
-            font=("Segoe UI", 11)
+        self.cb_empleado = self.crear_combo(
+            form, self.var_empleado, list(self.empleados.keys())
         )
-        self.cb_empleado.grid(
-            row=3, column=1, sticky="ew", padx=(10, 0), ipady=5
-        )
+        self.cb_empleado.grid(row=3, column=1, sticky="ew", padx=4, ipady=3)
 
         # Fila 3: motivo (causa) y fecha
-        self.etiqueta(form, "MOTIVO (CAUSA)", 4, 0, padx=(0, 10))
-        self.etiqueta(form, "FECHA (AAAA-MM-DD)", 4, 1, padx=(10, 0))
+        self.etiqueta(form, "MOTIVO (CAUSA):", 4, 0)
+        self.etiqueta(form, "FECHA (AAAA-MM-DD):", 4, 1)
 
-        self.cb_motivo = ttk.Combobox(
-            form,
-            textvariable=self.var_motivo,
-            values=self.MOTIVOS,
-            state="readonly",
-            font=("Segoe UI", 11)
-        )
-        self.cb_motivo.grid(
-            row=5, column=0, sticky="ew", padx=(0, 10), ipady=5
-        )
+        self.cb_motivo = self.crear_combo(form, self.var_motivo, self.MOTIVOS)
+        self.cb_motivo.grid(row=5, column=0, sticky="ew", padx=4, ipady=3)
 
-        entrada_fecha = self.crear_entrada(form, self.var_fecha)
-        entrada_fecha.grid(
-            row=5, column=1, sticky="ew", padx=(10, 0), ipady=6
+        campo_fecha = crear_campo_fecha(
+            self.app, form, self.var_fecha, fuente=("Segoe UI", 10)
         )
+        campo_fecha.configure(
+            bg=self.CAMPO, highlightbackground=self.GRIS_BORDE
+        )
+        campo_fecha.grid(row=5, column=1, sticky="ew", padx=4)
 
         # Fila 4: observaciones
-        self.etiqueta(form, "OBSERVACIONES (opcional)", 6, 0, columnspan=2)
+        self.etiqueta(form, "OBSERVACIONES (opcional):", 6, 0, columnspan=2)
 
         self.txt_observaciones = tk.Text(
-            form,
-            height=2,
-            font=("Segoe UI", 11),
-            relief="flat",
-            bd=0,
-            wrap="word",
-            bg=app.BLANCO,
-            fg=app.TEXTO,
-            highlightthickness=1,
-            highlightbackground=app.BORDE,
-            highlightcolor=app.VERDE_CLARO
+            form, height=4, font=("Segoe UI", 10), relief="solid", bd=1,
+            wrap="word", bg=self.CAMPO, fg=self.TEXTO_MAIN
         )
         self.txt_observaciones.grid(
-            row=7, column=0, columnspan=2, sticky="ew"
+            row=7, column=0, columnspan=2, sticky="nsew", padx=4, pady=(0, 4)
         )
+        form.rowconfigure(7, weight=1)
 
         # Botones
-        botones = tk.Frame(form, bg=app.BLANCO)
-        botones.grid(row=8, column=0, columnspan=2, sticky="ew", pady=(14, 0))
+        botones = tk.Frame(tarjeta, bg=self.BLANCO)
+        botones.pack(fill="x", padx=16, pady=(8, 14))
         botones.columnconfigure(0, weight=3)
         botones.columnconfigure(1, weight=1)
 
         tk.Button(
-            botones,
-            text="GUARDAR MERMA",
-            command=self.guardar,
-            font=("Segoe UI", 11, "bold"),
-            bg=app.VERDE_CLARO,
-            fg=app.BLANCO,
-            activebackground="#6AA336",
-            activeforeground=app.BLANCO,
-            relief="flat",
-            bd=0,
-            cursor="hand2",
-            pady=10
+            botones, text="GUARDAR MERMA", command=self.guardar,
+            font=("Segoe UI", 10, "bold"), bg=self.VERDE_MEDIO, fg=self.BLANCO,
+            activebackground=self.VERDE_HOVER, activeforeground=self.BLANCO,
+            relief="flat", cursor="hand2", pady=8
         ).grid(row=0, column=0, sticky="ew", padx=(0, 8))
 
         tk.Button(
-            botones,
-            text="LIMPIAR",
-            command=self.limpiar_formulario,
-            font=("Segoe UI", 10, "bold"),
-            bg="#E8EFEA",
-            fg=app.VERDE_OSCURO,
-            activebackground=app.VERDE_SUAVE,
-            activeforeground=app.VERDE_OSCURO,
-            relief="flat",
-            bd=0,
-            cursor="hand2",
-            pady=10
+            botones, text="LIMPIAR", command=self.limpiar_formulario,
+            font=("Segoe UI", 9, "bold"), bg="#E2E8F0", fg=self.TEXTO_MAIN,
+            activebackground="#CBD5E1", relief="flat", cursor="hand2", pady=8
         ).grid(row=0, column=1, sticky="ew")
 
-        # ---------- Tarjeta del resumen ----------
-        resumen = tk.Frame(
-            cuerpo,
-            bg=app.BLANCO,
-            highlightbackground=app.BORDE,
-            highlightthickness=1
-        )
-        resumen.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
-
-        tk.Frame(resumen, bg=app.VERDE_CLARO, height=4).pack(fill="x")
-
-        tk.Label(
-            resumen,
-            text="Resumen",
-            font=("Segoe UI", 14, "bold"),
-            bg=app.BLANCO,
-            fg=app.VERDE_OSCURO
-        ).pack(anchor="w", padx=20, pady=(14, 4))
+    # ------------------------------------------------------------------
+    # Resumen (lado derecho, arriba)
+    # ------------------------------------------------------------------
+    def construir_resumen(self, derecha):
+        resumen = self._crear_tarjeta(derecha, "📊 Resumen de la Merma")
+        resumen.pack(fill="x", pady=(0, 10))
 
         self.var_unidad = tk.StringVar(value="—")
         self.var_existencia = tk.StringVar(value="—")
@@ -305,132 +336,76 @@ class RegistrarMermaView:
             ("Existencia actual", self.var_existencia),
             ("Costo unitario", self.var_costo_unitario),
         ):
-            fila = tk.Frame(resumen, bg=app.BLANCO)
-            fila.pack(fill="x", padx=20, pady=5)
+            fila = tk.Frame(resumen, bg=self.BLANCO)
+            fila.pack(fill="x", padx=16, pady=3)
 
             tk.Label(
-                fila,
-                text=titulo,
-                font=("Segoe UI", 10),
-                bg=app.BLANCO,
-                fg=app.TEXTO_SECUNDARIO
+                fila, text=titulo, font=("Segoe UI", 9),
+                bg=self.BLANCO, fg=self.TEXTO_MUTED
             ).pack(side="left")
 
-            etiqueta_valor = tk.Label(
-                fila,
-                textvariable=variable,
-                font=("Segoe UI", 10, "bold"),
-                bg=app.BLANCO,
-                fg=app.TEXTO
+            valor = tk.Label(
+                fila, textvariable=variable, font=("Segoe UI", 9, "bold"),
+                bg=self.BLANCO, fg=self.TEXTO_MAIN
             )
-            etiqueta_valor.pack(side="right")
+            valor.pack(side="right")
 
             if titulo == "Existencia actual":
-                self.lbl_existencia = etiqueta_valor
+                self.lbl_existencia = valor
 
-        caja_costo = tk.Frame(resumen, bg=app.VERDE_SUAVE)
-        caja_costo.pack(fill="x", padx=20, pady=(14, 20))
-
-        tk.Label(
-            caja_costo,
-            text="Costo de la merma",
-            font=("Segoe UI", 10),
-            bg=app.VERDE_SUAVE,
-            fg=app.TEXTO_SECUNDARIO
-        ).pack(anchor="w", padx=14, pady=(12, 0))
+        caja_costo = tk.Frame(resumen, bg=self.VERDE_SUAVE)
+        caja_costo.pack(fill="x", padx=16, pady=(10, 14))
 
         tk.Label(
-            caja_costo,
-            textvariable=self.var_costo_total,
-            font=("Segoe UI", 23, "bold"),
-            bg=app.VERDE_SUAVE,
-            fg=app.VERDE_OSCURO
-        ).pack(anchor="w", padx=14, pady=(0, 12))
+            caja_costo, text="COSTO DE LA MERMA",
+            font=("Segoe UI", 8, "bold"), bg=self.VERDE_SUAVE,
+            fg=self.TEXTO_MUTED
+        ).pack(anchor="w", padx=12, pady=(8, 0))
+
+        tk.Label(
+            caja_costo, textvariable=self.var_costo_total,
+            font=("Segoe UI", 20, "bold"), bg=self.VERDE_SUAVE,
+            fg=self.VERDE_OSCURO
+        ).pack(anchor="w", padx=12, pady=(0, 8))
 
     # ------------------------------------------------------------------
-    # Tabla de últimas mermas
+    # Tabla de últimas mermas (lado derecho, abajo)
     # ------------------------------------------------------------------
-    def construir_tabla_reciente(self):
-        app = self.app
+    def construir_tabla_reciente(self, derecha):
+        tarjeta = self._crear_tarjeta(derecha, "📋 Mermas Recientes")
+        tarjeta.pack(fill="both", expand=True)
+
+        marco, self.tabla = crear_tabla(self.app, tarjeta, [
+            ("fecha", "Fecha", 90, "w"),
+            ("producto", "Producto", 130, "w"),
+            ("costo", "Costo", 85, "e"),
+        ])
+        marco.configure(highlightthickness=0)
+        marco.pack(fill="both", expand=True, padx=12, pady=6)
+        self.tabla.tag_configure("par", background=self.CAMPO)
+        self.tabla.tag_configure("impar", background=self.BLANCO)
+        self.tabla.bind("<Double-1>", lambda evento: self.ver_detalle())
 
         tk.Label(
-            app.contenido,
-            text="Últimas mermas registradas",
-            font=("Segoe UI", 16, "bold"),
-            bg=app.FONDO,
-            fg=app.VERDE_OSCURO
-        ).pack(anchor="w", padx=30, pady=(20, 10))
-
-        tabla_frame = tk.Frame(
-            app.contenido,
-            bg=app.BLANCO,
-            highlightbackground=app.BORDE,
-            highlightthickness=1
-        )
-        tabla_frame.pack(fill="both", expand=True, padx=30, pady=(0, 22))
-
-        columnas = ("fecha", "producto", "cantidad", "tipo", "motivo", "costo")
-        encabezados = {
-            "fecha": "Fecha",
-            "producto": "Producto",
-            "cantidad": "Cantidad",
-            "tipo": "Tipo",
-            "motivo": "Motivo",
-            "costo": "Costo"
-        }
-        anchos = {
-            "fecha": 140,
-            "producto": 160,
-            "cantidad": 90,
-            "tipo": 110,
-            "motivo": 160,
-            "costo": 100
-        }
-
-        self.tabla = ttk.Treeview(
-            tabla_frame,
-            columns=columnas,
-            show="headings",
-            height=4,
-            style="Mermas.Treeview"
-        )
-        for columna in columnas:
-            self.tabla.heading(columna, text=encabezados[columna])
-            self.tabla.column(columna, width=anchos[columna], anchor="center")
-
-        barra = ttk.Scrollbar(
-            tabla_frame, orient="vertical", command=self.tabla.yview
-        )
-        self.tabla.configure(yscrollcommand=barra.set)
-
-        self.tabla.pack(
-            side="left", fill="both", expand=True, padx=(8, 0), pady=8
-        )
-        barra.pack(side="right", fill="y", padx=(0, 8), pady=8)
+            tarjeta,
+            text="💡 Doble clic en una merma para ver su detalle.",
+            font=("Segoe UI", 8, "italic"), bg=self.BLANCO, fg=self.TEXTO_MUTED
+        ).pack(anchor="w", padx=16, pady=(0, 12))
 
         self.cargar_tabla_reciente()
 
     def cargar_tabla_reciente(self):
-        for item in self.tabla.get_children():
-            self.tabla.delete(item)
+        self.tabla.delete(*self.tabla.get_children())
 
         try:
             with obtener_conexion() as conexion:
                 registros = conexion.execute(
                     """
-                    SELECT
-                        m.fecha,
-                        p.nombre AS producto,
-                        m.cantidad,
-                        p.unidad,
-                        COALESCE(t.nombre, '—') AS tipo,
-                        m.motivo,
-                        m.costo_total
+                    SELECT m.id, m.fecha, p.nombre AS producto, m.costo_total
                     FROM mermas m
                     INNER JOIN productos p ON p.id = m.producto_id
-                    LEFT JOIN tipos_merma t ON t.id = m.tipo_merma_id
-                    ORDER BY m.id DESC
-                    LIMIT 10
+                    ORDER BY m.fecha DESC, m.id DESC
+                    LIMIT 30
                     """
                 ).fetchall()
         except Exception as error:
@@ -441,19 +416,112 @@ class RegistrarMermaView:
             )
             return
 
-        for registro in registros:
+        for idx, registro in enumerate(registros):
+            tag = "par" if idx % 2 == 0 else "impar"
             self.tabla.insert(
-                "",
-                "end",
+                "", "end", iid=str(registro["id"]),
                 values=(
-                    registro["fecha"],
+                    registro["fecha"][:10],
                     registro["producto"],
-                    f"{registro['cantidad']:g} {registro['unidad']}",
-                    registro["tipo"],
-                    registro["motivo"],
-                    f"${registro['costo_total']:,.2f}"
-                )
+                    f"${registro['costo_total']:,.2f}",
+                ),
+                tags=(tag,)
             )
+
+        self.cargar_indicadores()
+
+    def ver_detalle(self):
+        seleccion = self.tabla.selection()
+        if not seleccion:
+            return
+
+        try:
+            with obtener_conexion() as conexion:
+                f = conexion.execute(
+                    """
+                    SELECT m.fecha, p.nombre AS producto, p.unidad, m.cantidad,
+                           m.motivo, m.costo_total, m.observaciones,
+                           COALESCE(t.nombre, 'Sin tipo') AS tipo,
+                           COALESCE(e.nombre, 'Sin empleado') AS empleado,
+                           COALESCE(u.nombre, 'Usuario eliminado') AS usuario
+                    FROM mermas m
+                    JOIN productos p ON p.id = m.producto_id
+                    LEFT JOIN tipos_merma t ON t.id = m.tipo_merma_id
+                    LEFT JOIN empleados e ON e.id = m.empleado_id
+                    LEFT JOIN usuarios u ON u.id = m.usuario_id
+                    WHERE m.id = ?
+                    """,
+                    (int(seleccion[0]),)
+                ).fetchone()
+        except Exception as error:
+            messagebox.showerror(
+                "Error de base de datos",
+                f"No se pudo cargar el detalle.\n\n{error}",
+                parent=self.app.root
+            )
+            return
+
+        if f is None:
+            return
+
+        top = tk.Toplevel(self.app.root)
+        top.title("Detalle de Merma - Yogufrut")
+        top.geometry("480x520")
+        top.config(bg=self.FONDO_GENERAL)
+        top.transient(self.app.root)
+        top.grab_set()
+
+        head = tk.Frame(top, bg=self.VERDE_OSCURO)
+        head.pack(fill="x")
+        tk.Label(
+            head, text="📋 Ficha de Merma", font=("Segoe UI", 12, "bold"),
+            bg=self.VERDE_OSCURO, fg=self.BLANCO
+        ).pack(pady=12)
+
+        card = tk.Frame(top, bg=self.BLANCO, bd=1, relief="solid")
+        card.config(highlightbackground=self.GRIS_BORDE)
+        card.pack(fill="both", expand=True, padx=20, pady=15)
+
+        detalles = [
+            ("Fecha / Hora:", f["fecha"][:16]),
+            ("Producto:", f["producto"]),
+            ("Cantidad mermada:", f"{f['cantidad']:g} {f['unidad']}"),
+            ("Tipo de merma:", f["tipo"]),
+            ("Motivo:", f["motivo"]),
+            ("Costo de la pérdida:", f"${f['costo_total']:,.2f}"),
+            ("Empleado:", f["empleado"]),
+            ("Capturado por:", f["usuario"]),
+        ]
+        for etiqueta, valor in detalles:
+            fila = tk.Frame(card, bg=self.BLANCO)
+            fila.pack(fill="x", padx=15, pady=4)
+            tk.Label(
+                fila, text=etiqueta, font=("Segoe UI", 9, "bold"),
+                bg=self.BLANCO, fg=self.TEXTO_MUTED, width=22, anchor="w"
+            ).pack(side="left")
+            tk.Label(
+                fila, text=str(valor), font=("Segoe UI", 9, "bold"),
+                bg=self.BLANCO, fg=self.TEXTO_MAIN, anchor="w"
+            ).pack(side="left", fill="x", expand=True)
+
+        tk.Label(
+            card, text="Observaciones / Notas:", font=("Segoe UI", 9, "bold"),
+            bg=self.BLANCO, fg=self.TEXTO_MUTED
+        ).pack(anchor="w", padx=15, pady=(8, 2))
+
+        tk.Label(
+            card, text=f["observaciones"] or "Sin observaciones registradas.",
+            font=("Segoe UI", 9, "italic"), bg=self.CAMPO, fg=self.TEXTO_MAIN,
+            relief="solid", bd=1, padx=10, pady=8, justify="left",
+            anchor="nw", wraplength=400
+        ).pack(fill="both", expand=True, padx=15, pady=(0, 15))
+
+        tk.Button(
+            top, text="Cerrar", font=("Segoe UI", 9, "bold"),
+            bg=self.VERDE_OSCURO, fg=self.BLANCO,
+            activebackground=self.VERDE_HOVER, relief="flat", cursor="hand2",
+            command=top.destroy
+        ).pack(pady=(0, 15), ipadx=25, ipady=5)
 
     # ------------------------------------------------------------------
     # Lógica
@@ -473,7 +541,7 @@ class RegistrarMermaView:
         producto = self.productos.get(self.var_producto.get())
 
         if not producto:
-            self.lbl_cantidad.configure(text="CANTIDAD")
+            self.lbl_cantidad.configure(text="CANTIDAD:")
             self.var_unidad.set("—")
             self.var_existencia.set("—")
             self.var_costo_unitario.set("—")
@@ -482,7 +550,7 @@ class RegistrarMermaView:
             return
 
         unidad = producto["unidad"]
-        self.lbl_cantidad.configure(text=f"CANTIDAD ({unidad})")
+        self.lbl_cantidad.configure(text=f"CANTIDAD ({unidad}):")
         self.var_unidad.set(unidad)
         self.var_existencia.set(f"{producto['existencia']:g} {unidad}")
         self.var_costo_unitario.set(f"${producto['costo_unitario']:,.2f}")

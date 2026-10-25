@@ -37,6 +37,7 @@ def consultar_inventario(busqueda="", solo_alertas=False):
             "nombre": f["nombre"],
             "categoria": f["categoria"],
             "unidad": f["unidad"],
+            "precio": f["costo_unitario"],
             "existencia": f["existencia"],
             "stock_minimo": f["stock_minimo"],
             "valor": f["existencia"] * f["costo_unitario"],
@@ -149,13 +150,13 @@ class ModuloInventario:
 
         # Tabla de existencias
         self.marco_existencias, self.tabla = crear_tabla(d, self.contenido, [
-            ("nombre", "Producto", 210, "w"),
-            ("categoria", "Categoría", 150, "w"),
-            ("unidad", "Unidad", 80, "center"),
-            ("existencia", "Existencia", 105, "center"),
+            ("nombre", "Producto", 220, "w"),
+            ("categoria", "Categoría", 160, "w"),
+            ("unidad", "Unidad", 85, "center"),
+            ("precio", "Precio", 110, "e"),
+            ("existencia", "Existencia", 110, "center"),
             ("stock_minimo", "Stock mínimo", 125, "center"),
-            ("valor", "Valor", 110, "e"),
-            ("estado", "Estado", 90, "center"),
+            ("estado", "Estado", 95, "center"),
         ])
 
         self.tabla.tag_configure("bajo", background="#FFF4E0")
@@ -227,8 +228,8 @@ class ModuloInventario:
                 p["nombre"],
                 p["categoria"],
                 p["unidad"],
+                f"${p['precio']:,.2f}",
                 f"{p['existencia']:g}",
                 f"{p['stock_minimo']:g}",
-                f"${p['valor']:,.2f}",
                 p["estado"],
             ))

@@ -6,6 +6,7 @@ from datetime import date, timedelta
 from base_datos import obtener_conexion
 from ui_comunes import crear_boton, crear_tabla, crear_tarjeta_resumen
 from vista_historial import consultar_historial
+from ui_graficas import GraficaBarras, GraficaLinea, rellenar_dias
 
 PERIODOS = ["Hoy", "Últimos 7 días", "Este mes", "Todo el historial"]
 
@@ -45,6 +46,23 @@ def agrupar_con_porcentaje(filas, clave, costo_total):
         }
         for f in filas
     ]
+
+
+def costo_por_dia(desde=None, hasta=None):
+    """Costo de mermas por día, con ceros en los días sin mermas."""
+    donde, parametros = filtro_fechas("fecha", desde, hasta)
+
+    with obtener_conexion() as conexion:
+        filas = conexion.execute(
+            f"""
+            SELECT date(fecha) AS dia, SUM(costo_total) AS costo
+            FROM mermas WHERE {donde}
+            GROUP BY date(fecha)
+            """,
+            parametros
+        ).fetchall()
+
+    return rellenar_dias({f["dia"]: f["costo"] for f in filas}, desde, hasta)
 
 
 def generar_reporte(desde=None, hasta=None):
@@ -113,6 +131,7 @@ def generar_reporte(desde=None, hasta=None):
         "por_motivo": agrupar_con_porcentaje(por_motivo, "motivo", costo_total),
         "por_tipo": agrupar_con_porcentaje(por_tipo, "tipo", costo_total),
         "por_producto": [dict(f) for f in por_producto],
+        "por_dia": costo_por_dia(desde, hasta),
     }
 
 
@@ -147,26 +166,48 @@ class ModuloReportes:
         self.var_principal = tk.StringVar(value="—")
         self.var_porcentaje = tk.StringVar(value="—")
         self.var_agrupar = tk.StringVar(value="Motivo")
+        
+        # Configurar estilos modernos para ttk
+        self.configurar_estilos()
+
+    def configurar_estilos(self):
+        estilo = ttk.Style()
+        # El tema 'clam' elimina el aspecto 3D antiguo de Windows
+        if 'clam' in estilo.theme_names():
+            estilo.theme_use('clam')
+            
+        # Estilo plano para los Combobox
+        estilo.configure(
+            "Modern.TCombobox",
+            background=self.dashboard.BLANCO,
+            fieldbackground=self.dashboard.BLANCO,
+            borderwidth=1,
+            bordercolor=self.dashboard.BORDE,
+            arrowsize=14,
+            padding=4
+        )
 
     def mostrar(self):
         d = self.dashboard
         d.limpiar_contenido()
         d.titulo_pagina(
             "Reportes",
-            "Analiza los costos y las pérdidas de productos."
+            "Analiza los costos y las pérdidas de productos detalladamente."
         )
 
+        # BARRA SUPERIOR (Filtros y exportación)
         barra = tk.Frame(self.contenido, bg=d.FONDO)
-        barra.pack(fill="x", padx=30, pady=(0, 12))
+        barra.pack(fill="x", padx=40, pady=(10, 20)) # Aumentamos el padding
 
         tk.Label(
-            barra, text="Periodo:", font=("Segoe UI", 10),
-            bg=d.FONDO, fg=d.TEXTO
-        ).pack(side="left", padx=(0, 8))
+            barra, text="Periodo:", font=("Segoe UI", 10, "bold"),
+            bg=d.FONDO, fg="#555555" # Gris oscuro para etiquetas
+        ).pack(side="left", padx=(0, 10))
 
         combo = ttk.Combobox(
             barra, textvariable=self.var_periodo, values=PERIODOS,
-            state="readonly", width=20, font=("Segoe UI", 10)
+            state="readonly", width=22, font=("Segoe UI", 10),
+            style="Modern.TCombobox"
         )
         combo.pack(side="left")
         combo.bind("<<ComboboxSelected>>", lambda e: self.cargar())
@@ -175,65 +216,78 @@ class ModuloReportes:
             d, barra, "Exportar a CSV (Excel)", self.exportar
         ).pack(side="right")
 
+        # TARJETAS DE RESUMEN (KPIs)
         tarjetas = tk.Frame(self.contenido, bg=d.FONDO)
-        tarjetas.pack(fill="x", padx=30, pady=(0, 14))
+        tarjetas.pack(fill="x", padx=40, pady=(0, 25))
         for i in range(4):
             tarjetas.columnconfigure(i, weight=1, uniform="t")
 
+        # Aumentamos el espaciado entre tarjetas (padx)
         crear_tarjeta_resumen(
             d, tarjetas, "MERMAS REGISTRADAS", self.var_registros
-        ).grid(row=0, column=0, sticky="ew", padx=(0, 8))
+        ).grid(row=0, column=0, sticky="ew", padx=(0, 10))
+        
         crear_tarjeta_resumen(
             d, tarjetas, "COSTO TOTAL PERDIDO", self.var_costo
-        ).grid(row=0, column=1, sticky="ew", padx=8)
+        ).grid(row=0, column=1, sticky="ew", padx=10)
+        
         crear_tarjeta_resumen(
             d, tarjetas, "% MERMA VS COMPRAS", self.var_porcentaje
-        ).grid(row=0, column=2, sticky="ew", padx=8)
+        ).grid(row=0, column=2, sticky="ew", padx=10)
+        
         crear_tarjeta_resumen(
             d, tarjetas, "MOTIVO PRINCIPAL", self.var_principal
-        ).grid(row=0, column=3, sticky="ew", padx=(8, 0))
+        ).grid(row=0, column=3, sticky="ew", padx=(10, 0))
 
+        # CUERPO PRINCIPAL (Gráficas y Tablas)
         cuerpo = tk.Frame(self.contenido, bg=d.FONDO)
-        cuerpo.pack(fill="both", expand=True, padx=30, pady=(0, 20))
+        cuerpo.pack(fill="both", expand=True, padx=40, pady=(0, 30))
         cuerpo.columnconfigure(0, weight=1, uniform="c")
         cuerpo.columnconfigure(1, weight=1, uniform="c")
         cuerpo.rowconfigure(1, weight=1)
 
+        # Encabezado Gráfica
         encabezado = tk.Frame(cuerpo, bg=d.FONDO)
-        encabezado.grid(row=0, column=0, sticky="w", pady=(0, 6))
+        encabezado.grid(row=0, column=0, sticky="w", pady=(0, 10))
         tk.Label(
             encabezado, text="Pérdidas por", font=("Segoe UI", 12, "bold"),
             bg=d.FONDO, fg=d.VERDE_OSCURO
-        ).pack(side="left", padx=(0, 8))
+        ).pack(side="left", padx=(0, 10))
+        
         combo_agrupar = ttk.Combobox(
             encabezado, textvariable=self.var_agrupar,
-            values=["Motivo", "Tipo de merma"], state="readonly",
-            width=14, font=("Segoe UI", 10)
+            values=["Motivo", "Tipo de merma", "Día"], state="readonly",
+            width=16, font=("Segoe UI", 10), style="Modern.TCombobox"
         )
         combo_agrupar.pack(side="left")
         combo_agrupar.bind("<<ComboboxSelected>>", lambda e: self.cargar())
 
+        # Encabezado Tabla
         tk.Label(
             cuerpo, text="Productos con más pérdidas",
             font=("Segoe UI", 12, "bold"), bg=d.FONDO, fg=d.VERDE_OSCURO
-        ).grid(row=0, column=1, sticky="w", pady=(0, 6))
+        ).grid(row=0, column=1, sticky="w", pady=(0, 10), padx=(10, 0))
 
-        marco_m, self.tabla_motivo = crear_tabla(d, cuerpo, [
-            ("motivo", "Concepto", 125, "w"),
-            ("registros", "No.", 60, "center"),
-            ("costo", "Costo", 85, "e"),
-            ("grafica", "%", 105, "w"),
-        ])
-        marco_m.grid(row=1, column=0, sticky="nsew", padx=(0, 8))
+        # Contenedor Gráfica
+        marco_g = tk.Frame(
+            cuerpo, bg=d.BLANCO,
+            highlightbackground=d.BORDE, highlightthickness=1
+        )
+        marco_g.grid(row=1, column=0, sticky="nsew", padx=(0, 10))
+        self.grafica_barras = GraficaBarras(d, marco_g, alto=200)
+        self.grafica_linea = GraficaLinea(d, marco_g, alto=200)
 
+        # Contenedor Tabla
         marco_p, self.tabla_producto = crear_tabla(d, cuerpo, [
             ("producto", "Producto", 140, "w"),
             ("cantidad", "Cantidad", 90, "center"),
             ("costo", "Costo", 90, "e"),
         ])
-        marco_p.grid(row=1, column=1, sticky="nsew", padx=(8, 0))
+        marco_p.grid(row=1, column=1, sticky="nsew", padx=(10, 0))
 
         self.cargar()
+
+   
 
     def cargar(self):
         desde, hasta = rango_periodo(self.var_periodo.get())
@@ -249,20 +303,18 @@ class ModuloReportes:
             f"{porcentaje:.1f}%" if porcentaje is not None else "Sin compras"
         )
 
-        grupos = (
-            reporte["por_tipo"] if self.var_agrupar.get() == "Tipo de merma"
-            else reporte["por_motivo"]
-        )
-
-        self.tabla_motivo.delete(*self.tabla_motivo.get_children())
-        for m in grupos:
-            barra = "█" * max(1, round(m["porcentaje"] / 20))
-            self.tabla_motivo.insert("", "end", values=(
-                m["nombre"],
-                m["registros"],
-                f"${m['costo']:,.2f}",
-                f"{barra} {m['porcentaje']:.0f}%",
-            ))
+        if self.var_agrupar.get() == "Día":
+            self.grafica_barras.pack_forget()
+            self.grafica_linea.pack(fill="both", expand=True, padx=8, pady=8)
+            self.grafica_linea.mostrar(reporte["por_dia"])
+        else:
+            self.grafica_linea.pack_forget()
+            self.grafica_barras.pack(fill="both", expand=True, padx=8, pady=8)
+            grupos = (
+                reporte["por_tipo"] if self.var_agrupar.get() == "Tipo de merma"
+                else reporte["por_motivo"]
+            )
+            self.grafica_barras.mostrar(grupos)
 
         self.tabla_producto.delete(*self.tabla_producto.get_children())
         for p in reporte["por_producto"]:
