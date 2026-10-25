@@ -1,4 +1,5 @@
 import calendar
+import pathlib
 import tkinter as tk
 from datetime import date, datetime
 from tkinter import ttk
@@ -343,31 +344,6 @@ def crear_campo_fecha(
         relief="flat",
         bd=0,
         bg=d.BLANCO,
-<<<<<<< HEAD
-        fg=d.VERDE_OSCURO
-    ).pack(anchor="w", padx=16, pady=(0, 14))
-    
-    
-def activar_filas_alternadas(tabla):
-    """
-    Alterna los colores de las filas de una tabla Treeview.
-    No modifica los datos ni afecta las demás funciones.
-    """
-    tabla.tag_configure(
-        "fila_par",
-        background="#FFFFFF"
-    )
-
-    tabla.tag_configure(
-        "fila_impar",
-        background="#F1F7F2"
-    )
-
-    for indice, elemento in enumerate(tabla.get_children()):
-        etiqueta = "fila_par" if indice % 2 == 0 else "fila_impar"
-        tabla.item(elemento, tags=(etiqueta,))
-
-=======
         fg=d.TEXTO,
         highlightthickness=0
     )
@@ -378,7 +354,6 @@ def activar_filas_alternadas(tabla):
         padx=(8, 0),
         ipady=5
     )
->>>>>>> fe729bc0119bb93e5d803b4f493233b55688d501
 
     boton = tk.Button(
         marco,
@@ -399,3 +374,59 @@ def activar_filas_alternadas(tabla):
 
     marco.entrada = entrada
     return marco
+
+
+# ----------------------------------------------------------------------
+# Logo del negocio
+# ----------------------------------------------------------------------
+NOMBRES_LOGO = ("logo.png", "logo.jpg", "logo.jpeg", "logo.gif", "logo.webp")
+
+
+def buscar_logo():
+    """
+    Busca el archivo del logo. Basta con guardarlo como `logo.png`
+    junto a main.py (también se acepta en las carpetas assets/, img/ o
+    imagenes/). Devuelve la ruta, o None si todavía no existe.
+    """
+    raiz = pathlib.Path(__file__).resolve().parent
+    for carpeta in (raiz, raiz / "assets", raiz / "img", raiz / "imagenes"):
+        for nombre in NOMBRES_LOGO:
+            ruta = carpeta / nombre
+            if ruta.exists():
+                return ruta
+    return None
+
+
+_CACHE_LOGOS = {}
+
+
+def crear_logo(padre, bg, alto=44, texto="YOGUFRUT", fg="#FFFFFF"):
+    """
+    Etiqueta con el logo, escalado a `alto` píxeles de alto.
+    Si no hay archivo de logo (o no se puede leer), muestra el nombre
+    del negocio con una hoja, igual que la pantalla de login.
+    """
+    ruta = buscar_logo()
+    if ruta:
+        try:
+            from PIL import Image, ImageTk
+
+            clave = (str(ruta), alto)
+            foto = _CACHE_LOGOS.get(clave)
+            if foto is None:
+                imagen = Image.open(ruta).convert("RGBA")
+                ancho = max(1, round(imagen.width * alto / imagen.height))
+                remuestreo = getattr(Image, "Resampling", Image).LANCZOS
+                foto = ImageTk.PhotoImage(imagen.resize((ancho, alto), remuestreo))
+                _CACHE_LOGOS[clave] = foto  # se reutiliza al reabrir la pestaña
+
+            etiqueta = tk.Label(padre, image=foto, bg=bg, bd=0)
+            etiqueta.image = foto  # evita que Python libere la imagen
+            return etiqueta
+        except Exception:
+            pass  # si algo falla, se usa el texto de respaldo
+
+    return tk.Label(
+        padre, text=f"🌿 {texto}", font=("Segoe UI", 14, "bold"),
+        bg=bg, fg=fg
+    )

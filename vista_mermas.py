@@ -153,7 +153,12 @@ class RegistrarMermaView:
                 ORDER BY nombre
                 """
             ).fetchall()
-            self.productos = {fila["nombre"]: fila for fila in filas}
+            self.productos = {}
+            for fila in filas:
+                etiqueta = fila["nombre"]
+                if fila["existencia"] <= 0:
+                    etiqueta += "  (sin existencia)"
+                self.productos[etiqueta] = fila
 
             self.tipos_merma = {
                 fila["nombre"]: fila["id"]
@@ -228,6 +233,8 @@ class RegistrarMermaView:
         tarjeta = self._crear_tarjeta(cuerpo, "📝 Nueva Merma")
         tarjeta.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
 
+        self.construir_avisos(tarjeta)
+
         form = tk.Frame(tarjeta, bg=self.BLANCO)
         form.pack(fill="both", expand=True, padx=16, pady=(0, 6))
         form.columnconfigure(0, weight=1, uniform="col")
@@ -248,9 +255,12 @@ class RegistrarMermaView:
             form, self.var_producto, list(self.productos.keys())
         )
         self.cb_producto.grid(row=1, column=0, sticky="ew", padx=4, ipady=3)
-        self.cb_producto.bind(
-            "<<ComboboxSelected>>", lambda evento: self.actualizar_resumen()
-        )
+        # Se puede escribir para buscar: la lista se filtra al teclear
+        self.cb_producto.configure(state="normal")
+        self.cb_producto.bind("<KeyRelease>", self.filtrar_productos)
+        self.cb_producto.bind("<FocusOut>", self.confirmar_producto)
+        self.cb_producto.bind("<Return>", self.confirmar_producto)
+        self.cb_producto.bind("<<ComboboxSelected>>", self.al_elegir_producto)
 
         self.entrada_cantidad = self.crear_entrada(form, self.var_cantidad)
         self.entrada_cantidad.grid(row=1, column=1, sticky="ew", padx=4, ipady=4)
@@ -271,6 +281,7 @@ class RegistrarMermaView:
             form, self.var_empleado, list(self.empleados.keys())
         )
         self.cb_empleado.grid(row=3, column=1, sticky="ew", padx=4, ipady=3)
+        self.preseleccionar_unicos()
 
         # Fila 3: motivo (causa) y fecha
         self.etiqueta(form, "MOTIVO (CAUSA):", 4, 0)
@@ -526,6 +537,129 @@ class RegistrarMermaView:
     # ------------------------------------------------------------------
     # Lógica
     # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Lista de productos: búsqueda y avisos
+    # ------------------------------------------------------------------
+    def valores_productos(self):
+        return list(self.productos.keys())
+
+    def filtrar_productos(self, evento=None):
+        """Filtra la lista de productos mientras se escribe."""
+        teclas_ignoradas = (
+            "Up", "Down", "Left", "Right", "Return", "Tab", "Escape",
+            "Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L",
+            "Alt_R", "Caps_Lock"
+        )
+        if evento is not None and evento.keysym in teclas_ignoradas:
+            return
+
+        texto = self.var_producto.get().strip().lower()
+        todos = self.valores_productos()
+        self.cb_producto.configure(
+            values=[p for p in todos if texto in p.lower()] if texto else todos
+        )
+        self.actualizar_resumen()
+
+    def confirmar_producto(self, evento=None):
+        """Si lo escrito coincide con un solo producto, lo selecciona."""
+        texto = self.var_producto.get().strip().lower()
+        if texto and self.var_producto.get() not in self.productos:
+            empiezan = [p for p in self.productos if p.lower().startswith(texto)]
+            contienen = [p for p in self.productos if texto in p.lower()]
+            if len(empiezan) == 1:
+                self.var_producto.set(empiezan[0])
+            elif len(contienen) == 1:
+                self.var_producto.set(contienen[0])
+        self.actualizar_resumen()
+
+    def preseleccionar_unicos(self):
+        """Si solo hay un empleado registrado, ya queda elegido."""
+        if len(self.empleados) == 1 and not self.var_empleado.get():
+            self.var_empleado.set(next(iter(self.empleados)))
+
+    def al_elegir_producto(self, evento=None):
+        # Al elegir, la lista vuelve a mostrar todos los productos
+        self.cb_producto.configure(values=self.valores_productos())
+        self.actualizar_resumen()
+
+    def requisitos_pendientes(self):
+        """
+        Lo que falta para poder registrar una merma, como lista de
+        (mensaje, texto del botón, acción).
+        """
+        pendientes = []
+
+        if not self.productos:
+            pendientes.append((
+                "No hay productos registrados.",
+                "Cargar catálogo", self.cargar_catalogo
+            ))
+        elif not any(p["existencia"] > 0 for p in self.productos.values()):
+            pendientes.append((
+                "Ningún producto tiene existencia.",
+                "Ir a Compras", self.app.abrir_compras
+            ))
+
+        if not self.empleados:
+            pendientes.append((
+                "No hay empleados registrados.",
+                "Ir a Empleados", self.app.abrir_empleados
+            ))
+
+        return pendientes
+
+    def construir_avisos(self, tarjeta):
+        """Avisa qué falta antes de poder guardar una merma."""
+        pendientes = self.requisitos_pendientes()
+        if not pendientes:
+            return
+
+        fondo, borde, color = "#FEF9C3", "#FDE047", "#854D0E"
+        aviso = tk.Frame(
+            tarjeta, bg=fondo, highlightbackground=borde, highlightthickness=1
+        )
+        aviso.pack(fill="x", padx=16, pady=(0, 8))
+
+        tk.Label(
+            aviso, text="⚠ Antes de registrar una merma falta:",
+            font=("Segoe UI", 9, "bold"), bg=fondo, fg=color
+        ).pack(anchor="w", padx=12, pady=(8, 2))
+
+        for mensaje, texto_boton, comando in pendientes:
+            fila = tk.Frame(aviso, bg=fondo)
+            fila.pack(fill="x", padx=12, pady=(0, 6))
+            tk.Button(
+                fila, text=texto_boton, command=comando,
+                font=("Segoe UI", 8, "bold"), bg=self.VERDE_MEDIO,
+                fg=self.BLANCO, activebackground=self.VERDE_HOVER,
+                activeforeground=self.BLANCO, relief="flat", cursor="hand2"
+            ).pack(side="right", ipadx=8, ipady=2)
+            tk.Label(
+                fila, text=f"• {mensaje}", font=("Segoe UI", 9),
+                bg=fondo, fg=color, anchor="w", justify="left"
+            ).pack(side="left", fill="x", expand=True)
+
+    def cargar_catalogo(self):
+        """Carga los productos de Yogufrut (script agregar_productos.py)."""
+        padre = self.app.root
+        try:
+            import agregar_productos
+            agregar_productos.actualizar_precios_y_productos()
+        except Exception as error:
+            messagebox.showerror(
+                "No se pudo cargar el catálogo", str(error), parent=padre
+            )
+            return
+
+        messagebox.showinfo(
+            "Catálogo cargado",
+            "Se cargaron los productos con sus precios.\n\n"
+            "Para poder registrar mermas, primero dales existencia "
+            "registrando una compra en el apartado Compras.",
+            parent=padre
+        )
+        self.mostrar()
+
     def leer_cantidad(self):
         """Devuelve la cantidad como float, o None si no es un número válido."""
         texto = self.var_cantidad.get().strip().replace(",", ".")
@@ -552,7 +686,11 @@ class RegistrarMermaView:
         unidad = producto["unidad"]
         self.lbl_cantidad.configure(text=f"CANTIDAD ({unidad}):")
         self.var_unidad.set(unidad)
-        self.var_existencia.set(f"{producto['existencia']:g} {unidad}")
+        sin_existencia = producto["existencia"] <= 0
+        self.var_existencia.set(
+            f"0 {unidad} (sin existencia)" if sin_existencia
+            else f"{producto['existencia']:g} {unidad}"
+        )
         self.var_costo_unitario.set(f"${producto['costo_unitario']:,.2f}")
 
         cantidad = self.leer_cantidad()
@@ -565,14 +703,18 @@ class RegistrarMermaView:
             self.var_costo_total.set("$0.00")
             excede = False
 
-        self.lbl_existencia.configure(fg=self.ROJO if excede else app.TEXTO)
+        self.lbl_existencia.configure(
+            fg=self.ROJO if (excede or sin_existencia) else app.TEXTO
+        )
 
     def limpiar_formulario(self):
         self.var_producto.set("")
+        self.cb_producto.configure(values=self.valores_productos())
         self.var_cantidad.set("")
         self.var_motivo.set("")
         self.var_tipo.set("")
         self.var_empleado.set("")
+        self.preseleccionar_unicos()
         self.var_fecha.set(date.today().isoformat())
         self.txt_observaciones.delete("1.0", "end")
         self.actualizar_resumen()
@@ -664,6 +806,16 @@ class RegistrarMermaView:
                     """,
                     (producto["id"],)
                 ).fetchone()
+
+                if actual["existencia"] <= 0:
+                    messagebox.showwarning(
+                        "Producto sin existencia",
+                        f"{producto['nombre']} no tiene existencia.\n\n"
+                        "Registra primero una compra en el apartado Compras "
+                        "para darle existencia.",
+                        parent=padre
+                    )
+                    return
 
                 if cantidad > actual["existencia"]:
                     messagebox.showwarning(

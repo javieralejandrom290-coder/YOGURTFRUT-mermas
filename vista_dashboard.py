@@ -1,14 +1,16 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from datetime import date
+from datetime import date, timedelta
 
 import base_datos
 from base_datos import obtener_conexion
 from vista_productos import ModuloProductos
 from vista_mermas import RegistrarMermaView
-from vista_inventario import ModuloInventario
+from vista_inventario import ModuloInventario, consultar_inventario
 from vista_historial import ModuloHistorial
-from vista_reportes import ModuloReportes
+from vista_reportes import ModuloReportes, costo_por_dia
+from ui_graficas import GraficaLinea
+from ui_comunes import crear_tabla
 from vista_proveedores import ModuloProveedores
 from vista_compras import ModuloCompras
 from vista_empleados import ModuloEmpleados
@@ -120,6 +122,8 @@ class DashboardApp:
             opciones.append(("⚿", "Usuarios", self.abrir_usuarios))
 
         self.botones_menu = {}
+        self.seccion_activa = None
+        self.VERDE_ACTIVO = "#2B6F57"
 
         for icono, texto, comando in opciones:
             boton = tk.Button(
@@ -143,13 +147,13 @@ class DashboardApp:
 
             boton.bind(
                 "<Enter>",
-                lambda evento, b=boton:
-                    b.configure(bg=self.VERDE_HOVER)
+                lambda evento, b=boton, t=texto:
+                    b.configure(bg=self.color_boton_menu(t, pasando=True))
             )
             boton.bind(
                 "<Leave>",
-                lambda evento, b=boton:
-                    b.configure(bg=self.VERDE_OSCURO)
+                lambda evento, b=boton, t=texto:
+                    b.configure(bg=self.color_boton_menu(t))
             )
 
         separador = tk.Frame(
@@ -178,6 +182,18 @@ class DashboardApp:
             anchor="w"
         ).pack(side="bottom", anchor="w", padx=15, pady=(0, 15))
 
+    def color_boton_menu(self, texto, pasando=False):
+        """Color del botón del menú: activo, con el mouse encima o normal."""
+        if texto == self.seccion_activa:
+            return self.VERDE_ACTIVO
+        return self.VERDE_HOVER if pasando else self.VERDE_OSCURO
+
+    def resaltar_menu(self, texto):
+        """Marca en el menú lateral la sección que se está viendo."""
+        self.seccion_activa = texto
+        for nombre, boton in self.botones_menu.items():
+            boton.configure(bg=self.color_boton_menu(nombre))
+
     def crear_contenido(self):
         self.contenido = tk.Frame(
             self.root,
@@ -192,6 +208,9 @@ class DashboardApp:
     def limpiar_contenido(self):
         for widget in self.contenido.winfo_children():
             widget.destroy()
+        # Cada apartado puede pintar su propio fondo; al cambiar de pestaña
+        # se vuelve al fondo base para que el color no se "contagie".
+        self.contenido.config(bg=self.FONDO)
 
     def titulo_pagina(self, titulo, descripcion):
         encabezado = tk.Frame(
@@ -307,6 +326,7 @@ class DashboardApp:
         return tarjeta
 
     def mostrar_inicio(self):
+        self.resaltar_menu("Inicio")
         self.limpiar_contenido()
         self.titulo_pagina(
             "Panel principal",
@@ -365,13 +385,16 @@ class DashboardApp:
             )
             tarjetas.columnconfigure(indice, weight=1)
 
+        
+        self.crear_paneles_inicio()
+
         tk.Label(
             self.contenido,
             text="Últimas mermas registradas",
             font=("Segoe UI", 16, "bold"),
             bg=self.FONDO,
             fg=self.VERDE_OSCURO
-        ).pack(anchor="w", padx=30, pady=(28, 12))
+        ).pack(anchor="w", padx=30, pady=(14, 8))
 
         tabla_frame = tk.Frame(
             self.contenido,
@@ -469,6 +492,81 @@ class DashboardApp:
                 fg=self.TEXTO_SECUNDARIO
             ).place(relx=0.5, rely=0.5, anchor="center")
 
+    
+    def crear_paneles_inicio(self):
+        """Gráfica de los últimos 7 días y productos con stock bajo."""
+        fila = tk.Frame(self.contenido, bg=self.FONDO)
+        fila.pack(fill="x", padx=30, pady=(12, 0))
+        fila.columnconfigure(0, weight=3, uniform="p")
+        fila.columnconfigure(1, weight=2, uniform="p")
+
+        # ---- Costo de los últimos 7 días ----
+        izquierda = tk.Frame(fila, bg=self.FONDO)
+        izquierda.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
+
+        tk.Label(
+            izquierda, text="Pérdidas de los últimos 7 días",
+            font=("Segoe UI", 12, "bold"), bg=self.FONDO, fg=self.VERDE_OSCURO
+        ).pack(anchor="w", pady=(0, 6))
+
+        marco_g = tk.Frame(
+            izquierda, bg=self.BLANCO,
+            highlightbackground=self.BORDE, highlightthickness=1
+        )
+        marco_g.pack(fill="x")
+        grafica = GraficaLinea(self, marco_g, alto=150)
+        grafica.pack(fill="x", padx=8, pady=8)
+
+        hoy = date.today()
+        try:
+            grafica.mostrar(costo_por_dia(
+                (hoy - timedelta(days=6)).isoformat(), hoy.isoformat()
+            ))
+        except Exception:
+            grafica.mostrar([])
+
+        # ---- Productos con stock bajo ----
+        derecha = tk.Frame(fila, bg=self.FONDO)
+        derecha.grid(row=0, column=1, sticky="nsew", padx=(8, 0))
+
+        tk.Label(
+            derecha, text="Productos con stock bajo",
+            font=("Segoe UI", 12, "bold"), bg=self.FONDO, fg=self.VERDE_OSCURO
+        ).pack(anchor="w", pady=(0, 6))
+
+        marco_s, tabla_s = crear_tabla(self, derecha, [
+            ("producto", "Producto", 105, "w"),
+            ("existencia", "Existencia", 90, "center"),
+            ("estado", "Estado", 65, "center"),
+        ])
+        marco_s.pack(fill="x")
+        tabla_s.configure(height=3)
+        tabla_s.tag_configure("bajo", background="#FFF4E0")
+        tabla_s.tag_configure("agotado", background="#FDECEA")
+
+        try:
+            alertas = consultar_inventario(solo_alertas=True)
+        except Exception:
+            alertas = []
+
+        # Primero los agotados, luego los más cercanos a quedarse sin stock
+        alertas.sort(key=lambda p: (
+            p["estado"] != "Agotado",
+            p["existencia"] / p["stock_minimo"] if p["stock_minimo"] else 0
+        ))
+
+        for p in alertas[:30]:
+            tabla_s.insert("", "end", tags=(p["estado"].lower(),), values=(
+                p["nombre"], f"{p['existencia']:g} {p['unidad']}", p["estado"]
+            ))
+
+        if not alertas:
+            tk.Label(
+                marco_s, text="Sin alertas de stock.",
+                font=("Segoe UI", 10), bg=self.BLANCO,
+                fg=self.TEXTO_SECUNDARIO
+            ).place(relx=0.5, rely=0.55, anchor="center")
+
     def mostrar_modulo_pendiente(self, titulo, descripcion):
         self.limpiar_contenido()
         self.titulo_pagina(titulo, descripcion)
@@ -498,30 +596,39 @@ class DashboardApp:
         ).pack(pady=(0, 30))
 
     def abrir_productos(self):
+        self.resaltar_menu("Productos")
         ModuloProductos(self).mostrar()
 
     def abrir_mermas(self):
+        self.resaltar_menu("Registrar merma")
         self.vista_mermas.mostrar()
 
     def abrir_inventario(self):
+        self.resaltar_menu("Inventario")
         ModuloInventario(self).mostrar()
 
     def abrir_historial(self):
+        self.resaltar_menu("Historial")
         ModuloHistorial(self).mostrar()
 
     def abrir_reportes(self):
+        self.resaltar_menu("Reportes")
         ModuloReportes(self).mostrar()
 
     def abrir_proveedores(self):
+        self.resaltar_menu("Proveedores")
         ModuloProveedores(self).mostrar()
 
     def abrir_compras(self):
+        self.resaltar_menu("Compras")
         ModuloCompras(self).mostrar()
 
     def abrir_empleados(self):
+        self.resaltar_menu("Empleados")
         ModuloEmpleados(self).mostrar()
 
     def abrir_usuarios(self):
+        self.resaltar_menu("Usuarios")
         ModuloUsuarios(self).mostrar()
 
 

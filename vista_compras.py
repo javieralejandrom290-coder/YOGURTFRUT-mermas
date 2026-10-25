@@ -3,7 +3,7 @@ from tkinter import ttk, messagebox
 from datetime import date, datetime
 
 from base_datos import obtener_conexion, registrar_movimiento_inventario
-from ui_comunes import crear_boton, crear_tabla
+from ui_comunes import crear_boton, crear_tabla, crear_logo
 
 
 def leer_numero(texto):
@@ -16,11 +16,14 @@ def leer_numero(texto):
 
 class ModuloCompras:
 
-    VERDE_OSCURO = "#064E3B"
-    VERDE_MEDIO = "#059669"
-    VERDE_CLARO = "#DCFCE7"
-    VERDE_HOVER = "#047857"
-    FONDO_GENERAL = "#F0FDF4"
+    # Paleta basada en el verde del logo de Yogufrut (#A1C534)
+    VERDE_OSCURO = "#0F2A22"   # títulos y texto sobre el verde (contraste alto)
+    VERDE_MEDIO = "#A1C534"    # botones y acentos: verde del logo
+    VERDE_CLARO = "#E6F0BD"    # franjas de título de las tarjetas
+    VERDE_HOVER = "#8DB02A"
+    ENCABEZADO = "#A1C534"     # banda superior de la pestaña
+    FONDO_GENERAL = "#F1F7DD"  # fondo de la pestaña con tinte del mismo verde
+    TEXTO_SUAVE = "#2D4410"    # texto secundario sobre el verde
     BLANCO = "#FFFFFF"
     TEXTO_MAIN = "#0F172A"
     TEXTO_MUTED = "#64748B"
@@ -50,21 +53,30 @@ class ModuloCompras:
         d.limpiar_contenido()
         self.contenido.config(bg=self.FONDO_GENERAL)
 
-        header = tk.Frame(self.contenido, bg=self.VERDE_OSCURO, height=65)
+        header = tk.Frame(self.contenido, bg=self.ENCABEZADO, height=78)
         header.pack(fill="x")
         header.pack_propagate(False)
 
-        header_content = tk.Frame(header, bg=self.VERDE_OSCURO)
-        header_content.pack(fill="both", expand=True, padx=25, pady=12)
+        header_content = tk.Frame(header, bg=self.ENCABEZADO)
+        header_content.pack(fill="both", expand=True, padx=25, pady=7)
+
+        # El logo va sobre una etiqueta blanca para conservar su color original
+        # (si existe logo.png junto a main.py se usa; si no, el nombre).
+        marca = tk.Frame(header_content, bg=self.BLANCO)
+        marca.pack(side="left", padx=(0, 18))
+        self.logo = crear_logo(
+            marca, bg=self.BLANCO, alto=44, fg=self.VERDE_OSCURO
+        )
+        self.logo.pack(padx=14, pady=8)
 
         tk.Label(
-            header_content, text="🛒 Módulo de Registro de Compras",
-            font=("Segoe UI", 15, "bold"), bg=self.VERDE_OSCURO, fg=self.BLANCO
+            header_content, text="Registro de Compras",
+            font=("Segoe UI", 16, "bold"), bg=self.ENCABEZADO, fg=self.VERDE_OSCURO
         ).pack(side="left")
 
         tk.Label(
-            header_content, text="Abastece el inventario de Yogufrut registrando las entradas desde proveedores",
-            font=("Segoe UI", 9), bg=self.VERDE_OSCURO, fg="#A7F3D0"
+            header_content, text="Registra las entradas de productos desde proveedores",
+            font=("Segoe UI", 9), bg=self.ENCABEZADO, fg=self.TEXTO_SUAVE
         ).pack(side="right", padx=10)
 
         self.cargar_catalogos()
@@ -72,13 +84,13 @@ class ModuloCompras:
         frame_kpis = tk.Frame(self.contenido, bg=self.FONDO_GENERAL)
         frame_kpis.pack(fill="x", padx=25, pady=(10, 10))
 
-        self._crear_kpi(frame_kpis, "TOTAL COMPRADO ESTE MES", self.var_kpi_total_mes, "#10B981", "💰")
-        self._crear_kpi(frame_kpis, "ÓRDENES REGISTRADAS", self.var_kpi_ordenes, "#3B82F6", "📑")
+        self._crear_kpi(frame_kpis, "TOTAL COMPRADO ESTE MES", self.var_kpi_total_mes, "#A1C534", "💰")
+        self._crear_kpi(frame_kpis, "ÓRDENES REGISTRADAS", self.var_kpi_ordenes, "#7A9A22", "📑")
 
         cuerpo = tk.Frame(self.contenido, bg=self.FONDO_GENERAL)
         cuerpo.pack(fill="both", expand=True, padx=25, pady=(0, 20))
-        cuerpo.columnconfigure(0, weight=3, uniform="c")
-        cuerpo.columnconfigure(1, weight=2, uniform="c")
+        cuerpo.columnconfigure(0, weight=5, uniform="c")
+        cuerpo.columnconfigure(1, weight=4, uniform="c")
         cuerpo.rowconfigure(0, weight=1)
 
         self.construir_formulario(cuerpo)
@@ -121,14 +133,14 @@ class ModuloCompras:
         tarjeta.config(highlightbackground=self.GRIS_BORDE)
         tarjeta.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
 
-        tk.Frame(tarjeta, bg=self.VERDE_OSCURO, height=4).pack(fill="x")
+        tk.Frame(tarjeta, bg=self.VERDE_MEDIO, height=6).pack(fill="x")
 
-        header_card = tk.Frame(tarjeta, bg=self.BLANCO)
-        header_card.pack(fill="x", padx=16, pady=(12, 6))
+        header_card = tk.Frame(tarjeta, bg=self.VERDE_CLARO)
+        header_card.pack(fill="x", pady=(0, 6))
         tk.Label(
             header_card, text="📝 Nueva Orden de Compra",
-            font=("Segoe UI", 11, "bold"), bg=self.BLANCO, fg=self.VERDE_OSCURO
-        ).pack(anchor="w")
+            font=("Segoe UI", 11, "bold"), bg=self.VERDE_CLARO, fg=self.VERDE_OSCURO
+        ).pack(anchor="w", padx=16, pady=8)
 
         form = tk.Frame(tarjeta, bg=self.BLANCO)
         form.pack(fill="x", padx=16, pady=(4, 6))
@@ -167,7 +179,8 @@ class ModuloCompras:
         
         tk.Button(
             form, text="＋ Agregar", font=("Segoe UI", 9, "bold"),
-            bg=self.VERDE_MEDIO, fg=self.BLANCO, activebackground=self.VERDE_HOVER,
+            bg=self.VERDE_MEDIO, fg=self.VERDE_OSCURO, activebackground=self.VERDE_HOVER,
+            activeforeground=self.VERDE_OSCURO,
             relief="flat", cursor="hand2", command=self.agregar_renglon
         ).grid(row=3, column=3, sticky="ew", padx=4, ipady=3)
 
@@ -181,11 +194,11 @@ class ModuloCompras:
                         fieldbackground=self.BLANCO,
                         borderwidth=0)
         style.configure("Treeview.Heading",
-                        background=self.VERDE_OSCURO,
-                        foreground=self.BLANCO,
+                        background=self.VERDE_MEDIO,
+                        foreground=self.VERDE_OSCURO,
                         font=("Segoe UI", 9, "bold"),
                         relief="flat")
-        style.map("Treeview", background=[("selected", self.VERDE_MEDIO)], foreground=[("selected", self.BLANCO)])
+        style.map("Treeview", background=[("selected", self.VERDE_MEDIO)], foreground=[("selected", self.VERDE_OSCURO)])
 
         marco, self.tabla_renglones = crear_tabla(d, tarjeta, [
             ("producto", "Producto", 160, "w"),
@@ -195,7 +208,7 @@ class ModuloCompras:
         ])
         marco.configure(highlightthickness=0)
         marco.pack(fill="both", expand=True, padx=12, pady=6)
-        self.tabla_renglones.configure(height=6)
+        self.tabla_renglones.configure(height=4)
         
         self.tabla_renglones.tag_configure("par", background="#F8FAFC")
         self.tabla_renglones.tag_configure("impar", background=self.BLANCO)
@@ -225,15 +238,15 @@ class ModuloCompras:
 
         tk.Button(
             botones, text="GUARDAR COMPRA", command=self.guardar,
-            font=("Segoe UI", 10, "bold"), bg=self.VERDE_MEDIO, fg=self.BLANCO,
-            activebackground=self.VERDE_HOVER, activeforeground=self.BLANCO,
+            font=("Segoe UI", 10, "bold"), bg=self.VERDE_MEDIO, fg=self.VERDE_OSCURO,
+            activebackground=self.VERDE_HOVER, activeforeground=self.VERDE_OSCURO,
             relief="flat", cursor="hand2", pady=8
         ).grid(row=0, column=0, sticky="ew", padx=(0, 8))
 
         tk.Button(
             botones, text="LIMPIAR", command=self.limpiar,
-            font=("Segoe UI", 9, "bold"), bg="#E2E8F0", fg=self.TEXTO_MAIN,
-            activebackground="#CBD5E1", relief="flat", cursor="hand2", pady=8
+            font=("Segoe UI", 9, "bold"), bg=self.VERDE_CLARO, fg=self.VERDE_OSCURO,
+            activebackground="#D6E5A0", relief="flat", cursor="hand2", pady=8
         ).grid(row=0, column=1, sticky="ew")
 
     def construir_recientes(self, cuerpo):
@@ -243,19 +256,19 @@ class ModuloCompras:
         tarjeta_recientes.config(highlightbackground=self.GRIS_BORDE)
         tarjeta_recientes.grid(row=0, column=1, sticky="nsew", padx=(10, 0))
 
-        tk.Frame(tarjeta_recientes, bg=self.VERDE_OSCURO, height=4).pack(fill="x")
+        tk.Frame(tarjeta_recientes, bg=self.VERDE_MEDIO, height=6).pack(fill="x")
 
-        header_card = tk.Frame(tarjeta_recientes, bg=self.BLANCO)
-        header_card.pack(fill="x", padx=16, pady=(12, 6))
+        header_card = tk.Frame(tarjeta_recientes, bg=self.VERDE_CLARO)
+        header_card.pack(fill="x", pady=(0, 6))
         tk.Label(
             header_card, text="📋 Historial de Compras Recientes",
-            font=("Segoe UI", 11, "bold"), bg=self.BLANCO, fg=self.VERDE_OSCURO
-        ).pack(anchor="w")
+            font=("Segoe UI", 11, "bold"), bg=self.VERDE_CLARO, fg=self.VERDE_OSCURO
+        ).pack(anchor="w", padx=16, pady=8)
 
         marco, self.tabla_recientes = crear_tabla(d, tarjeta_recientes, [
-            ("fecha", "Fecha", 90, "w"),
-            ("proveedor", "Proveedor", 130, "w"),
-            ("total", "Total", 85, "e"),
+            ("fecha", "Fecha", 105, "w"),
+            ("proveedor", "Proveedor", 140, "w"),
+            ("total", "Total", 100, "e"),
         ])
         marco.pack(fill="both", expand=True, padx=12, pady=6)
         self.tabla_recientes.bind("<Double-1>", lambda evento: self.ver_detalle())
@@ -476,9 +489,9 @@ class ModuloCompras:
         top.transient(self.root)
         top.grab_set()
 
-        head = tk.Frame(top, bg=self.VERDE_OSCURO)
+        head = tk.Frame(top, bg=self.VERDE_MEDIO)
         head.pack(fill="x")
-        tk.Label(head, text="🧾 Recibo de Compra", font=("Segoe UI", 12, "bold"), bg=self.VERDE_OSCURO, fg=self.BLANCO).pack(pady=10)
+        tk.Label(head, text="🧾 Recibo de Compra", font=("Segoe UI", 12, "bold"), bg=self.VERDE_MEDIO, fg=self.VERDE_OSCURO).pack(pady=10)
 
         card = tk.Frame(top, bg=self.BLANCO, bd=1, relief="solid")
         card.pack(fill="both", expand=True, padx=20, pady=15)
@@ -497,4 +510,4 @@ class ModuloCompras:
 
         tk.Label(card, text=f"TOTAL: ${compra['total']:,.2f}", font=("Segoe UI", 13, "bold"), bg=self.BLANCO, fg=self.VERDE_OSCURO).pack(anchor="e", padx=12, pady=5)
 
-        tk.Button(top, text="Cerrar", font=("Segoe UI", 9, "bold"), bg=self.VERDE_OSCURO, fg=self.BLANCO, relief="flat", command=top.destroy).pack(pady=(0, 15), ipadx=20)
+        tk.Button(top, text="Cerrar", font=("Segoe UI", 9, "bold"), bg=self.VERDE_MEDIO, fg=self.VERDE_OSCURO, relief="flat", command=top.destroy).pack(pady=(0, 15), ipadx=20)
