@@ -16,51 +16,72 @@ from tkinter import ttk
 # ----------------------------------------------------------------------
 # Paleta verde pastel
 # ----------------------------------------------------------------------
-FONDO = "#F4FAF6"
-FONDO_SUAVE = "#E9F5EE"
-SIDEBAR = "#E9F5EE"
+
+# ----------------------------------------------------------------------
+# Paleta oficial YOGURFRUT
+# ----------------------------------------------------------------------
+# Verde de marca
+VERDE_MARCA = "#8BC900"
+VERDE_MARCA_HOVER = "#78AE00"
+VERDE_MARCA_OSCURO = "#527A00"
+VERDE_MARCA_CLARO = "#B6E65C"
+
+# Fondos y superficies
+FONDO = "#F7FAF1"
+FONDO_SUAVE = "#EEF5E2"
+SIDEBAR = "#F0F6E6"
 BLANCO = "#FFFFFF"
 SUPERFICIE = "#FFFFFF"
-CAMPO = "#F8FCF9"
-FILA_ALTERNA = "#F7FBF8"
+CAMPO = "#FBFDF7"
+FILA_ALTERNA = "#F4F8EB"
 
-VERDE_OSCURO = "#2D5A47"
-VERDE_TEXTO = "#2D5A47"
-VERDE_MEDIO = "#8FCBA6"
-VERDE_CLARO = "#A9D7BE"
-VERDE_PRIMARIO = "#8FCBA6"
-VERDE_HOVER = "#7BBE96"
-VERDE_SUAVE = "#E3F5EA"
-VERDE_ACTIVO = "#D9EFE2"
-SIDEBAR_ACTIVO = "#DDEFE5"
+# Compatibilidad con todas las pantallas existentes
+VERDE_OSCURO = "#35520B"
+VERDE_TEXTO = "#35520B"
+VERDE_MEDIO = "#A4D64D"
+VERDE_CLARO = "#B6E65C"
+VERDE_PRIMARIO = "#8BC900"
+VERDE_HOVER = "#78AE00"
+VERDE_SUAVE = "#EAF5D5"
+VERDE_ACTIVO = "#DDF0B8"
+SIDEBAR_ACTIVO = "#E2F1C7"
 
-BORDE = "#D7EBDF"
-BORDE_FUERTE = "#C4E2D0"
-TEXTO = "#2D5A47"
-TEXTO_SECUNDARIO = "#6E8F7E"
-ACENTO = "#A7CF3E"
-ACENTO_LOGO = "#A7CF3E"
+# Bordes y textos
+BORDE = "#E2EBCF"
+BORDE_FUERTE = "#C9D9AB"
+TEXTO = "#26351A"
+TEXTO_SECUNDARIO = "#71805F"
+ACENTO = "#8BC900"
+ACENTO_LOGO = "#8BC900"
 
-PELIGRO = "#B5524F"
-PELIGRO_FONDO = "#FBE9E9"
-PELIGRO_BORDE = "#F1D1D1"
+# Estados de la aplicación
+PELIGRO = "#C62828"
+PELIGRO_FONDO = "#FDECEC"
+PELIGRO_BORDE = "#F3CACA"
 
-EXITO_FONDO = "#E3F5EA"
-EXITO_TEXTO = "#2F7A56"
+EXITO_FONDO = "#E6F5D8"
+EXITO_TEXTO = "#416D12"
 
-AVISO_FONDO = "#FDF7E7"
-AVISO_BORDE = "#EFDFB4"
-AVISO_TEXTO = "#8A6B2F"
+AVISO_FONDO = "#FFF5D9"
+AVISO_BORDE = "#F0DFA9"
+AVISO_TEXTO = "#856404"
 
-SOMBRA = "#E2EEE7"
-SOMBRA_SUAVE = "#EDF5F0"
-DECORACION_1 = "#E1F2E8"
-DECORACION_2 = "#DFF1E7"
+# Sombras y decoración
+SOMBRA = "#E7EDD9"
+SOMBRA_SUAVE = "#EDF1E5"
+DECORACION_1 = "#E8F3D6"
+DECORACION_2 = "#DDEDBF"
 
 # Tonos para series de gráficas
 PALETA_GRAFICAS = [
-    "#8FCBA6", "#A9D7BE", "#7BBE96", "#B7DCC7",
-    "#6FAF8D", "#C7E6D5", "#9ACAB2", "#D4EBDD",
+    "#8BC900",
+    "#527A00",
+    "#B6E65C",
+    "#A4D64D",
+    "#78AE00",
+    "#C9E99A",
+    "#709E24",
+    "#E0F0C4",
 ]
 
 # Espaciado, radios y medidas compartidas
