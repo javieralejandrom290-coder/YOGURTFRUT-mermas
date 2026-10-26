@@ -2,8 +2,9 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import date, datetime
 
+import ui_tema
 from base_datos import obtener_conexion, registrar_movimiento_inventario
-from ui_comunes import crear_tabla, crear_campo_fecha
+from ui_comunes import Tarjeta, crear_kpi, crear_tabla, crear_campo_fecha
 
 
 class RegistrarMermaView:
@@ -23,18 +24,19 @@ class RegistrarMermaView:
         "Otro",
     ]
 
-    # Paleta compartida con Compras e Historial
-    VERDE_OSCURO = "#064E3B"
-    VERDE_MEDIO = "#059669"
-    VERDE_SUAVE = "#DCFCE7"
-    VERDE_HOVER = "#047857"
-    FONDO_GENERAL = "#F0FDF4"
-    BLANCO = "#FFFFFF"
-    TEXTO_MAIN = "#0F172A"
-    TEXTO_MUTED = "#64748B"
-    GRIS_BORDE = "#CBD5E1"
-    CAMPO = "#F8FAFC"
-    ROJO = "#C62828"
+    # Paleta pastel compartida con el resto del sistema
+    VERDE_OSCURO = ui_tema.VERDE_OSCURO
+    VERDE_MEDIO = ui_tema.VERDE_PRIMARIO
+    VERDE_SUAVE = ui_tema.VERDE_SUAVE
+    VERDE_CLARO = ui_tema.VERDE_CLARO
+    VERDE_HOVER = ui_tema.VERDE_HOVER
+    FONDO_GENERAL = ui_tema.FONDO
+    BLANCO = ui_tema.BLANCO
+    TEXTO_MAIN = ui_tema.TEXTO
+    TEXTO_MUTED = ui_tema.TEXTO_SECUNDARIO
+    GRIS_BORDE = ui_tema.BORDE
+    CAMPO = ui_tema.CAMPO
+    ROJO = ui_tema.PELIGRO
 
     def __init__(self, app):
         # app = instancia de DashboardApp (de ahí tomamos el contenedor, usuario, etc.)
@@ -67,13 +69,22 @@ class RegistrarMermaView:
         self.construir_encabezado()
 
         frame_kpis = tk.Frame(app.contenido, bg=self.FONDO_GENERAL)
-        frame_kpis.pack(fill="x", padx=25, pady=(10, 10))
-        self._crear_kpi(frame_kpis, "MERMAS REGISTRADAS HOY", self.var_kpi_hoy, "#0284C7", "📦")
-        self._crear_kpi(frame_kpis, "COSTO PERDIDO HOY", self.var_kpi_costo_hoy, "#D97706", "🏷️")
-        self._crear_kpi(frame_kpis, "COSTO PERDIDO ESTE MES", self.var_kpi_costo_mes, "#DC2626", "💰")
+        frame_kpis.pack(fill="x", padx=32, pady=(14, 14))
+        self._crear_kpi(
+            frame_kpis, "MERMAS REGISTRADAS HOY",
+            self.var_kpi_hoy, ui_tema.VERDE_CLARO
+        )
+        self._crear_kpi(
+            frame_kpis, "COSTO PERDIDO HOY",
+            self.var_kpi_costo_hoy, ui_tema.VERDE_MEDIO
+        )
+        self._crear_kpi(
+            frame_kpis, "COSTO PERDIDO ESTE MES",
+            self.var_kpi_costo_mes, ui_tema.ACENTO
+        )
 
         cuerpo = tk.Frame(app.contenido, bg=self.FONDO_GENERAL)
-        cuerpo.pack(fill="both", expand=True, padx=25, pady=(0, 20))
+        cuerpo.pack(fill="both", expand=True, padx=32, pady=(0, 24))
         cuerpo.columnconfigure(0, weight=3, uniform="c")
         cuerpo.columnconfigure(1, weight=2, uniform="c")
         cuerpo.rowconfigure(0, weight=1)
@@ -88,56 +99,63 @@ class RegistrarMermaView:
         self.actualizar_resumen()
 
     def construir_encabezado(self):
-        header = tk.Frame(self.app.contenido, bg=self.VERDE_OSCURO, height=65)
+        header = tk.Frame(
+            self.app.contenido, bg=self.FONDO_GENERAL, height=92
+        )
         header.pack(fill="x")
         header.pack_propagate(False)
 
-        contenido = tk.Frame(header, bg=self.VERDE_OSCURO)
-        contenido.pack(fill="both", expand=True, padx=25, pady=12)
+        contenido = tk.Frame(header, bg=self.FONDO_GENERAL)
+        contenido.pack(fill="both", expand=True, padx=32, pady=14)
+
+        tk.Frame(
+            contenido, bg=self.VERDE_MEDIO, width=4, height=48
+        ).pack(side="left", padx=(0, 14))
+
+        textos = tk.Frame(contenido, bg=self.FONDO_GENERAL)
+        textos.pack(side="left", fill="y")
 
         tk.Label(
-            contenido, text="🗑️ Registro de Mermas",
-            font=("Segoe UI", 15, "bold"), bg=self.VERDE_OSCURO, fg=self.BLANCO
-        ).pack(side="left")
+            textos, text="Registro de mermas",
+            font=ui_tema.fuente_titulo(22),
+            bg=self.FONDO_GENERAL, fg=self.VERDE_OSCURO, anchor="w"
+        ).pack(anchor="w", pady=(4, 0))
 
         tk.Label(
-            contenido,
+            textos,
             text="Registra las pérdidas de productos de la heladería Yogufrut",
-            font=("Segoe UI", 9), bg=self.VERDE_OSCURO, fg="#A7F3D0"
-        ).pack(side="right", padx=10)
+            font=ui_tema.fuente_texto(9),
+            bg=self.FONDO_GENERAL, fg=self.TEXTO_MUTED, anchor="w"
+        ).pack(anchor="w", pady=(3, 0))
 
-    def _crear_kpi(self, padre, titulo, variable, color, icono):
-        card = tk.Frame(padre, bg=self.BLANCO, bd=1, relief="solid")
-        card.config(highlightbackground=self.GRIS_BORDE)
-        card.pack(side="left", fill="both", expand=True, padx=4)
-
-        tk.Frame(card, bg=color, width=5).pack(side="left", fill="y")
-
-        info = tk.Frame(card, bg=self.BLANCO)
-        info.pack(side="left", fill="both", expand=True, padx=12, pady=8)
-
-        tk.Label(
-            info, text=f"{icono} {titulo}", font=("Segoe UI", 8, "bold"),
-            bg=self.BLANCO, fg=self.TEXTO_MUTED
-        ).pack(anchor="w")
-        tk.Label(
-            info, textvariable=variable, font=("Segoe UI", 13, "bold"),
-            bg=self.BLANCO, fg=self.TEXTO_MAIN
-        ).pack(anchor="w", pady=(2, 0))
+    def _crear_kpi(self, padre, titulo, variable, color):
+        tarjeta = crear_kpi(
+            self.app, padre, titulo, variable=variable, color=color,
+        )
+        tarjeta.pack(side="left", fill="both", expand=True, padx=6)
+        return tarjeta
 
     def _crear_tarjeta(self, padre, titulo):
-        """Tarjeta blanca con barra verde superior y título, como en Compras."""
-        tarjeta = tk.Frame(padre, bg=self.BLANCO, bd=1, relief="solid")
-        tarjeta.config(highlightbackground=self.GRIS_BORDE)
+        """Tarjeta blanca con título y acento pastel."""
+        tarjeta = Tarjeta(padre, bg=self.BLANCO, padding=14)
+        tarjeta.cuerpo.pack_propagate(True)
 
-        tk.Frame(tarjeta, bg=self.VERDE_OSCURO, height=4).pack(fill="x")
+        fila_titulo = tk.Frame(tarjeta.cuerpo, bg=self.BLANCO)
+        fila_titulo.pack(fill="x", pady=(0, 8))
 
-        encabezado = tk.Frame(tarjeta, bg=self.BLANCO)
-        encabezado.pack(fill="x", padx=16, pady=(12, 6))
+        punto = tk.Canvas(
+            fila_titulo, width=10, height=10, bg=self.BLANCO,
+            highlightthickness=0, bd=0,
+        )
+        punto.create_oval(0, 0, 10, 10, fill=self.VERDE_MEDIO, outline="")
+        punto.pack(side="left", padx=(0, 8))
+
         tk.Label(
-            encabezado, text=titulo, font=("Segoe UI", 11, "bold"),
+            fila_titulo, text=titulo, font=ui_tema.fuente_titulo(14),
             bg=self.BLANCO, fg=self.VERDE_OSCURO
-        ).pack(anchor="w")
+        ).pack(side="left")
+
+        tarjeta.titulo = fila_titulo
         return tarjeta
 
     # ------------------------------------------------------------------
@@ -153,7 +171,12 @@ class RegistrarMermaView:
                 ORDER BY nombre
                 """
             ).fetchall()
-            self.productos = {fila["nombre"]: fila for fila in filas}
+            self.productos = {}
+            for fila in filas:
+                etiqueta = fila["nombre"]
+                if fila["existencia"] <= 0:
+                    etiqueta += "  (sin existencia)"
+                self.productos[etiqueta] = fila
 
             self.tipos_merma = {
                 fila["nombre"]: fila["id"]
@@ -203,7 +226,7 @@ class RegistrarMermaView:
     # ------------------------------------------------------------------
     def etiqueta(self, padre, texto, fila, columna, columnspan=1, pady=(8, 2)):
         etiqueta = tk.Label(
-            padre, text=texto, font=("Segoe UI", 8, "bold"),
+            padre, text=texto, font=ui_tema.fuente_texto(8, "bold"),
             bg=self.BLANCO, fg=self.TEXTO_MUTED, anchor="w"
         )
         etiqueta.grid(
@@ -213,23 +236,33 @@ class RegistrarMermaView:
         return etiqueta
 
     def crear_entrada(self, padre, variable):
-        return tk.Entry(
-            padre, textvariable=variable, font=("Segoe UI", 10),
-            relief="solid", bd=1, bg=self.CAMPO, fg=self.TEXTO_MAIN
+        return ui_tema.entrada(
+            padre, textvariable=variable, font=ui_tema.fuente_texto(10)
         )
 
     def crear_combo(self, padre, variable, valores):
         return ttk.Combobox(
             padre, textvariable=variable, values=valores,
-            state="readonly", font=("Segoe UI", 10)
+            state="readonly", font=ui_tema.fuente_texto(10),
+            style="Tema.TCombobox"
         )
 
     def construir_formulario(self, cuerpo):
-        tarjeta = self._crear_tarjeta(cuerpo, "📝 Nueva Merma")
+        tarjeta = self._crear_tarjeta(cuerpo, "Nueva merma")
         tarjeta.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+        caja = tarjeta.cuerpo
 
-        form = tk.Frame(tarjeta, bg=self.BLANCO)
-        form.pack(fill="both", expand=True, padx=16, pady=(0, 6))
+        self.construir_avisos(caja)
+
+        # Los botones se reservan antes que el formulario para que siempre
+        # queden visibles aunque la ventana sea pequeña.
+        botones = tk.Frame(caja, bg=self.BLANCO)
+        botones.pack(side="bottom", fill="x", pady=(10, 0))
+        botones.columnconfigure(0, weight=3)
+        botones.columnconfigure(1, weight=1)
+
+        form = tk.Frame(caja, bg=self.BLANCO)
+        form.pack(fill="both", expand=True)
         form.columnconfigure(0, weight=1, uniform="col")
         form.columnconfigure(1, weight=1, uniform="col")
 
@@ -248,9 +281,12 @@ class RegistrarMermaView:
             form, self.var_producto, list(self.productos.keys())
         )
         self.cb_producto.grid(row=1, column=0, sticky="ew", padx=4, ipady=3)
-        self.cb_producto.bind(
-            "<<ComboboxSelected>>", lambda evento: self.actualizar_resumen()
-        )
+        # Se puede escribir para buscar: la lista se filtra al teclear
+        self.cb_producto.configure(state="normal")
+        self.cb_producto.bind("<KeyRelease>", self.filtrar_productos)
+        self.cb_producto.bind("<FocusOut>", self.confirmar_producto)
+        self.cb_producto.bind("<Return>", self.confirmar_producto)
+        self.cb_producto.bind("<<ComboboxSelected>>", self.al_elegir_producto)
 
         self.entrada_cantidad = self.crear_entrada(form, self.var_cantidad)
         self.entrada_cantidad.grid(row=1, column=1, sticky="ew", padx=4, ipady=4)
@@ -271,6 +307,7 @@ class RegistrarMermaView:
             form, self.var_empleado, list(self.empleados.keys())
         )
         self.cb_empleado.grid(row=3, column=1, sticky="ew", padx=4, ipady=3)
+        self.preseleccionar_unicos()
 
         # Fila 3: motivo (causa) y fecha
         self.etiqueta(form, "MOTIVO (CAUSA):", 4, 0)
@@ -280,10 +317,7 @@ class RegistrarMermaView:
         self.cb_motivo.grid(row=5, column=0, sticky="ew", padx=4, ipady=3)
 
         campo_fecha = crear_campo_fecha(
-            self.app, form, self.var_fecha, fuente=("Segoe UI", 10)
-        )
-        campo_fecha.configure(
-            bg=self.CAMPO, highlightbackground=self.GRIS_BORDE
+            self.app, form, self.var_fecha, fuente=ui_tema.fuente_texto(10)
         )
         campo_fecha.grid(row=5, column=1, sticky="ew", padx=4)
 
@@ -291,8 +325,10 @@ class RegistrarMermaView:
         self.etiqueta(form, "OBSERVACIONES (opcional):", 6, 0, columnspan=2)
 
         self.txt_observaciones = tk.Text(
-            form, height=4, font=("Segoe UI", 10), relief="solid", bd=1,
-            wrap="word", bg=self.CAMPO, fg=self.TEXTO_MAIN
+            form, height=4, font=ui_tema.fuente_texto(10), relief="flat", bd=0,
+            wrap="word", bg=self.CAMPO, fg=self.TEXTO_MAIN,
+            highlightthickness=1, highlightbackground=self.GRIS_BORDE,
+            highlightcolor=self.VERDE_CLARO, insertbackground=self.VERDE_OSCURO
         )
         self.txt_observaciones.grid(
             row=7, column=0, columnspan=2, sticky="nsew", padx=4, pady=(0, 4)
@@ -300,30 +336,21 @@ class RegistrarMermaView:
         form.rowconfigure(7, weight=1)
 
         # Botones
-        botones = tk.Frame(tarjeta, bg=self.BLANCO)
-        botones.pack(fill="x", padx=16, pady=(8, 14))
-        botones.columnconfigure(0, weight=3)
-        botones.columnconfigure(1, weight=1)
-
-        tk.Button(
-            botones, text="GUARDAR MERMA", command=self.guardar,
-            font=("Segoe UI", 10, "bold"), bg=self.VERDE_MEDIO, fg=self.BLANCO,
-            activebackground=self.VERDE_HOVER, activeforeground=self.BLANCO,
-            relief="flat", cursor="hand2", pady=8
+        ui_tema.boton(
+            botones, "GUARDAR MERMA", self.guardar, principal=True
         ).grid(row=0, column=0, sticky="ew", padx=(0, 8))
 
-        tk.Button(
-            botones, text="LIMPIAR", command=self.limpiar_formulario,
-            font=("Segoe UI", 9, "bold"), bg="#E2E8F0", fg=self.TEXTO_MAIN,
-            activebackground="#CBD5E1", relief="flat", cursor="hand2", pady=8
+        ui_tema.boton(
+            botones, "LIMPIAR", self.limpiar_formulario
         ).grid(row=0, column=1, sticky="ew")
 
     # ------------------------------------------------------------------
     # Resumen (lado derecho, arriba)
     # ------------------------------------------------------------------
     def construir_resumen(self, derecha):
-        resumen = self._crear_tarjeta(derecha, "📊 Resumen de la Merma")
+        resumen = self._crear_tarjeta(derecha, "Resumen de la merma")
         resumen.pack(fill="x", pady=(0, 10))
+        caja = resumen.cuerpo
 
         self.var_unidad = tk.StringVar(value="—")
         self.var_existencia = tk.StringVar(value="—")
@@ -336,16 +363,16 @@ class RegistrarMermaView:
             ("Existencia actual", self.var_existencia),
             ("Costo unitario", self.var_costo_unitario),
         ):
-            fila = tk.Frame(resumen, bg=self.BLANCO)
-            fila.pack(fill="x", padx=16, pady=3)
+            fila = tk.Frame(caja, bg=self.BLANCO)
+            fila.pack(fill="x", pady=2)
 
             tk.Label(
-                fila, text=titulo, font=("Segoe UI", 9),
+                fila, text=titulo, font=ui_tema.fuente_texto(9),
                 bg=self.BLANCO, fg=self.TEXTO_MUTED
             ).pack(side="left")
 
             valor = tk.Label(
-                fila, textvariable=variable, font=("Segoe UI", 9, "bold"),
+                fila, textvariable=variable, font=ui_tema.fuente_texto(9, "bold"),
                 bg=self.BLANCO, fg=self.TEXTO_MAIN
             )
             valor.pack(side="right")
@@ -353,44 +380,46 @@ class RegistrarMermaView:
             if titulo == "Existencia actual":
                 self.lbl_existencia = valor
 
-        caja_costo = tk.Frame(resumen, bg=self.VERDE_SUAVE)
-        caja_costo.pack(fill="x", padx=16, pady=(10, 14))
+        caja_costo = tk.Frame(caja, bg=self.VERDE_SUAVE)
+        caja_costo.pack(fill="x", pady=(10, 0))
 
         tk.Label(
             caja_costo, text="COSTO DE LA MERMA",
-            font=("Segoe UI", 8, "bold"), bg=self.VERDE_SUAVE,
+            font=ui_tema.fuente_texto(8, "bold"), bg=self.VERDE_SUAVE,
             fg=self.TEXTO_MUTED
-        ).pack(anchor="w", padx=12, pady=(8, 0))
+        ).pack(anchor="w", padx=14, pady=(10, 0))
 
         tk.Label(
             caja_costo, textvariable=self.var_costo_total,
-            font=("Segoe UI", 20, "bold"), bg=self.VERDE_SUAVE,
+            font=ui_tema.fuente_titulo(22), bg=self.VERDE_SUAVE,
             fg=self.VERDE_OSCURO
-        ).pack(anchor="w", padx=12, pady=(0, 8))
+        ).pack(anchor="w", padx=14, pady=(2, 10))
 
     # ------------------------------------------------------------------
     # Tabla de últimas mermas (lado derecho, abajo)
     # ------------------------------------------------------------------
     def construir_tabla_reciente(self, derecha):
-        tarjeta = self._crear_tarjeta(derecha, "📋 Mermas Recientes")
+        tarjeta = self._crear_tarjeta(derecha, "Mermas recientes")
         tarjeta.pack(fill="both", expand=True)
+        caja = tarjeta.cuerpo
 
-        marco, self.tabla = crear_tabla(self.app, tarjeta, [
-            ("fecha", "Fecha", 90, "w"),
-            ("producto", "Producto", 130, "w"),
-            ("costo", "Costo", 85, "e"),
+        marco, self.tabla = crear_tabla(self.app, caja, [
+            ("fecha", "Fecha", 88, "w"),
+            ("producto", "Producto", 128, "w"),
+            ("costo", "Costo", 84, "e"),
         ])
-        marco.configure(highlightthickness=0)
-        marco.pack(fill="both", expand=True, padx=12, pady=6)
         self.tabla.tag_configure("par", background=self.CAMPO)
         self.tabla.tag_configure("impar", background=self.BLANCO)
         self.tabla.bind("<Double-1>", lambda evento: self.ver_detalle())
 
         tk.Label(
-            tarjeta,
-            text="💡 Doble clic en una merma para ver su detalle.",
-            font=("Segoe UI", 8, "italic"), bg=self.BLANCO, fg=self.TEXTO_MUTED
-        ).pack(anchor="w", padx=16, pady=(0, 12))
+            caja,
+            text="Doble clic en una merma para ver su detalle.",
+            font=ui_tema.fuente_texto(8, "italic"), bg=self.BLANCO,
+            fg=self.TEXTO_MUTED
+        ).pack(side="bottom", anchor="w", pady=(10, 0))
+
+        marco.pack(fill="both", expand=True)
 
         self.cargar_tabla_reciente()
 
@@ -466,21 +495,23 @@ class RegistrarMermaView:
 
         top = tk.Toplevel(self.app.root)
         top.title("Detalle de Merma - Yogufrut")
-        top.geometry("480x520")
+        top.geometry("500x560")
         top.config(bg=self.FONDO_GENERAL)
         top.transient(self.app.root)
         top.grab_set()
 
-        head = tk.Frame(top, bg=self.VERDE_OSCURO)
-        head.pack(fill="x")
-        tk.Label(
-            head, text="📋 Ficha de Merma", font=("Segoe UI", 12, "bold"),
-            bg=self.VERDE_OSCURO, fg=self.BLANCO
-        ).pack(pady=12)
+        tarjeta = Tarjeta(top, bg=self.BLANCO, padding=22)
+        tarjeta.pack(fill="both", expand=True, padx=22, pady=18)
+        card = tarjeta.cuerpo
 
-        card = tk.Frame(top, bg=self.BLANCO, bd=1, relief="solid")
-        card.config(highlightbackground=self.GRIS_BORDE)
-        card.pack(fill="both", expand=True, padx=20, pady=15)
+        tk.Label(
+            card, text="Ficha de merma", font=ui_tema.fuente_titulo(18),
+            bg=self.BLANCO, fg=self.VERDE_OSCURO
+        ).pack(anchor="w")
+
+        tk.Frame(card, bg=self.VERDE_MEDIO, height=3, width=46).pack(
+            anchor="w", pady=(6, 14)
+        )
 
         detalles = [
             ("Fecha / Hora:", f["fecha"][:16]),
@@ -494,38 +525,159 @@ class RegistrarMermaView:
         ]
         for etiqueta, valor in detalles:
             fila = tk.Frame(card, bg=self.BLANCO)
-            fila.pack(fill="x", padx=15, pady=4)
+            fila.pack(fill="x", pady=4)
             tk.Label(
-                fila, text=etiqueta, font=("Segoe UI", 9, "bold"),
-                bg=self.BLANCO, fg=self.TEXTO_MUTED, width=22, anchor="w"
+                fila, text=etiqueta, font=ui_tema.fuente_texto(9, "bold"),
+                bg=self.BLANCO, fg=self.TEXTO_MUTED, width=20, anchor="w"
             ).pack(side="left")
             tk.Label(
-                fila, text=str(valor), font=("Segoe UI", 9, "bold"),
+                fila, text=str(valor), font=ui_tema.fuente_texto(9, "bold"),
                 bg=self.BLANCO, fg=self.TEXTO_MAIN, anchor="w"
             ).pack(side="left", fill="x", expand=True)
 
         tk.Label(
-            card, text="Observaciones / Notas:", font=("Segoe UI", 9, "bold"),
+            card, text="Observaciones / Notas:", font=ui_tema.fuente_texto(9, "bold"),
             bg=self.BLANCO, fg=self.TEXTO_MUTED
-        ).pack(anchor="w", padx=15, pady=(8, 2))
+        ).pack(anchor="w", pady=(12, 4))
 
         tk.Label(
             card, text=f["observaciones"] or "Sin observaciones registradas.",
-            font=("Segoe UI", 9, "italic"), bg=self.CAMPO, fg=self.TEXTO_MAIN,
-            relief="solid", bd=1, padx=10, pady=8, justify="left",
-            anchor="nw", wraplength=400
-        ).pack(fill="both", expand=True, padx=15, pady=(0, 15))
+            font=ui_tema.fuente_texto(9, "italic"), bg=self.CAMPO, fg=self.TEXTO_MAIN,
+            padx=12, pady=10, justify="left",
+            anchor="nw", wraplength=410
+        ).pack(fill="both", expand=True)
 
-        tk.Button(
-            top, text="Cerrar", font=("Segoe UI", 9, "bold"),
-            bg=self.VERDE_OSCURO, fg=self.BLANCO,
-            activebackground=self.VERDE_HOVER, relief="flat", cursor="hand2",
-            command=top.destroy
-        ).pack(pady=(0, 15), ipadx=25, ipady=5)
+        ui_tema.boton(
+            top, "Cerrar", top.destroy, principal=True,
+            fuente=ui_tema.fuente_texto(9, "bold")
+        ).pack(pady=(0, 18))
 
     # ------------------------------------------------------------------
     # Lógica
     # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Lista de productos: búsqueda y avisos
+    # ------------------------------------------------------------------
+    def valores_productos(self):
+        return list(self.productos.keys())
+
+    def filtrar_productos(self, evento=None):
+        """Filtra la lista de productos mientras se escribe."""
+        teclas_ignoradas = (
+            "Up", "Down", "Left", "Right", "Return", "Tab", "Escape",
+            "Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L",
+            "Alt_R", "Caps_Lock"
+        )
+        if evento is not None and evento.keysym in teclas_ignoradas:
+            return
+
+        texto = self.var_producto.get().strip().lower()
+        todos = self.valores_productos()
+        self.cb_producto.configure(
+            values=[p for p in todos if texto in p.lower()] if texto else todos
+        )
+        self.actualizar_resumen()
+
+    def confirmar_producto(self, evento=None):
+        """Si lo escrito coincide con un solo producto, lo selecciona."""
+        texto = self.var_producto.get().strip().lower()
+        if texto and self.var_producto.get() not in self.productos:
+            empiezan = [p for p in self.productos if p.lower().startswith(texto)]
+            contienen = [p for p in self.productos if texto in p.lower()]
+            if len(empiezan) == 1:
+                self.var_producto.set(empiezan[0])
+            elif len(contienen) == 1:
+                self.var_producto.set(contienen[0])
+        self.actualizar_resumen()
+
+    def preseleccionar_unicos(self):
+        """Si solo hay un empleado registrado, ya queda elegido."""
+        if len(self.empleados) == 1 and not self.var_empleado.get():
+            self.var_empleado.set(next(iter(self.empleados)))
+
+    def al_elegir_producto(self, evento=None):
+        # Al elegir, la lista vuelve a mostrar todos los productos
+        self.cb_producto.configure(values=self.valores_productos())
+        self.actualizar_resumen()
+
+    def requisitos_pendientes(self):
+        """
+        Lo que falta para poder registrar una merma, como lista de
+        (mensaje, texto del botón, acción).
+        """
+        pendientes = []
+
+        if not self.productos:
+            pendientes.append((
+                "No hay productos registrados.",
+                "Cargar catálogo", self.cargar_catalogo
+            ))
+        elif not any(p["existencia"] > 0 for p in self.productos.values()):
+            pendientes.append((
+                "Ningún producto tiene existencia.",
+                "Ir a Compras", self.app.abrir_compras
+            ))
+
+        if not self.empleados:
+            pendientes.append((
+                "No hay empleados registrados.",
+                "Ir a Empleados", self.app.abrir_empleados
+            ))
+
+        return pendientes
+
+    def construir_avisos(self, tarjeta):
+        """Avisa qué falta antes de poder guardar una merma."""
+        pendientes = self.requisitos_pendientes()
+        if not pendientes:
+            return
+
+        fondo, borde, color = (
+            ui_tema.AVISO_FONDO, ui_tema.AVISO_BORDE, ui_tema.AVISO_TEXTO
+        )
+        aviso = tk.Frame(
+            tarjeta, bg=fondo, highlightbackground=borde, highlightthickness=1
+        )
+        aviso.pack(fill="x", padx=16, pady=(0, 8))
+
+        tk.Label(
+            aviso, text="Antes de registrar una merma falta:",
+            font=ui_tema.fuente_texto(9, "bold"), bg=fondo, fg=color
+        ).pack(anchor="w", padx=12, pady=(8, 2))
+
+        for mensaje, texto_boton, comando in pendientes:
+            fila = tk.Frame(aviso, bg=fondo)
+            fila.pack(fill="x", padx=12, pady=(0, 8))
+            ui_tema.boton(
+                fila, texto_boton, comando,
+                fuente=ui_tema.fuente_texto(8, "bold")
+            ).pack(side="right")
+            tk.Label(
+                fila, text=f"— {mensaje}", font=ui_tema.fuente_texto(9),
+                bg=fondo, fg=color, anchor="w", justify="left"
+            ).pack(side="left", fill="x", expand=True, padx=(0, 8))
+
+    def cargar_catalogo(self):
+        """Carga los productos de Yogufrut (script agregar_productos.py)."""
+        padre = self.app.root
+        try:
+            import agregar_productos
+            agregar_productos.actualizar_precios_y_productos()
+        except Exception as error:
+            messagebox.showerror(
+                "No se pudo cargar el catálogo", str(error), parent=padre
+            )
+            return
+
+        messagebox.showinfo(
+            "Catálogo cargado",
+            "Se cargaron los productos con sus precios.\n\n"
+            "Para poder registrar mermas, primero dales existencia "
+            "registrando una compra en el apartado Compras.",
+            parent=padre
+        )
+        self.mostrar()
+
     def leer_cantidad(self):
         """Devuelve la cantidad como float, o None si no es un número válido."""
         texto = self.var_cantidad.get().strip().replace(",", ".")
@@ -552,7 +704,11 @@ class RegistrarMermaView:
         unidad = producto["unidad"]
         self.lbl_cantidad.configure(text=f"CANTIDAD ({unidad}):")
         self.var_unidad.set(unidad)
-        self.var_existencia.set(f"{producto['existencia']:g} {unidad}")
+        sin_existencia = producto["existencia"] <= 0
+        self.var_existencia.set(
+            f"0 {unidad} (sin existencia)" if sin_existencia
+            else f"{producto['existencia']:g} {unidad}"
+        )
         self.var_costo_unitario.set(f"${producto['costo_unitario']:,.2f}")
 
         cantidad = self.leer_cantidad()
@@ -565,14 +721,18 @@ class RegistrarMermaView:
             self.var_costo_total.set("$0.00")
             excede = False
 
-        self.lbl_existencia.configure(fg=self.ROJO if excede else app.TEXTO)
+        self.lbl_existencia.configure(
+            fg=self.ROJO if (excede or sin_existencia) else app.TEXTO
+        )
 
     def limpiar_formulario(self):
         self.var_producto.set("")
+        self.cb_producto.configure(values=self.valores_productos())
         self.var_cantidad.set("")
         self.var_motivo.set("")
         self.var_tipo.set("")
         self.var_empleado.set("")
+        self.preseleccionar_unicos()
         self.var_fecha.set(date.today().isoformat())
         self.txt_observaciones.delete("1.0", "end")
         self.actualizar_resumen()
@@ -664,6 +824,16 @@ class RegistrarMermaView:
                     """,
                     (producto["id"],)
                 ).fetchone()
+
+                if actual["existencia"] <= 0:
+                    messagebox.showwarning(
+                        "Producto sin existencia",
+                        f"{producto['nombre']} no tiene existencia.\n\n"
+                        "Registra primero una compra en el apartado Compras "
+                        "para darle existencia.",
+                        parent=padre
+                    )
+                    return
 
                 if cantidad > actual["existencia"]:
                     messagebox.showwarning(

@@ -2,8 +2,9 @@ import sqlite3
 import tkinter as tk
 from tkinter import ttk, messagebox
 
+import ui_tema
 from base_datos import obtener_conexion
-from ui_comunes import crear_boton, crear_tabla
+from ui_comunes import Tarjeta, crear_boton, crear_tabla
 
 
 class ModuloCatalogo:
@@ -43,25 +44,26 @@ class ModuloCatalogo:
         d.titulo_pagina(self.TITULO, self.DESCRIPCION)
 
         barra = tk.Frame(self.contenido, bg=d.FONDO)
-        barra.pack(fill="x", padx=30, pady=(0, 12))
+        barra.pack(fill="x", padx=32, pady=(0, 14))
 
         tk.Label(
-            barra, text="Buscar:", font=("Segoe UI", 10),
+            barra, text="Buscar:", font=ui_tema.fuente_texto(10),
             bg=d.FONDO, fg=d.TEXTO
         ).pack(side="left")
 
-        entrada = tk.Entry(
-            barra, textvariable=self.busqueda, font=("Segoe UI", 11),
-            relief="solid", bd=1, width=28
+        entrada = ui_tema.entrada(
+            barra, textvariable=self.busqueda, font=ui_tema.fuente_texto(10),
+            width=28
         )
-        entrada.pack(side="left", padx=(8, 12), ipady=4)
+        entrada.pack(side="left", padx=(8, 12), ipady=2)
         entrada.bind("<KeyRelease>", lambda evento: self.cargar())
 
         tk.Checkbutton(
             barra, text="Mostrar inactivos",
             variable=self.mostrar_inactivos, command=self.cargar,
-            font=("Segoe UI", 10), bg=d.FONDO, fg=d.TEXTO,
-            activebackground=d.FONDO, cursor="hand2"
+            font=ui_tema.fuente_texto(10), bg=d.FONDO, fg=d.TEXTO,
+            activebackground=d.FONDO, selectcolor=d.BLANCO,
+            cursor="hand2", highlightthickness=0, bd=0
         ).pack(side="left")
 
         crear_boton(
@@ -71,7 +73,7 @@ class ModuloCatalogo:
             d, barra, "Editar", self.editar
         ).pack(side="right", padx=8)
         crear_boton(
-            d, barra, f"＋ Nuevo {self.NOMBRE_SINGULAR}", self.nuevo,
+            d, barra, f"Nuevo {self.NOMBRE_SINGULAR}", self.nuevo,
             principal=True
         ).pack(side="right")
 
@@ -80,17 +82,19 @@ class ModuloCatalogo:
             for campo in self.CAMPOS
         ] + [("estado", "Estado", 90, "center")]
 
+        self.etiqueta_resumen = tk.Label(
+            self.contenido, text="", font=ui_tema.fuente_texto(9),
+            bg=d.FONDO, fg=d.TEXTO_SECUNDARIO
+        )
+        self.etiqueta_resumen.pack(
+            side="bottom", anchor="w", padx=32, pady=(0, 22)
+        )
+
         marco, self.tabla = crear_tabla(d, self.contenido, columnas)
-        marco.pack(fill="both", expand=True, padx=30, pady=(0, 10))
+        marco.pack(fill="both", expand=True, padx=32, pady=(0, 12))
 
         self.tabla.tag_configure("inactivo", foreground=d.TEXTO_SECUNDARIO)
         self.tabla.bind("<Double-1>", lambda evento: self.editar())
-
-        self.etiqueta_resumen = tk.Label(
-            self.contenido, text="", font=("Segoe UI", 9),
-            bg=d.FONDO, fg=d.TEXTO_SECUNDARIO
-        )
-        self.etiqueta_resumen.pack(anchor="w", padx=30, pady=(0, 20))
 
         self.cargar()
 
@@ -192,24 +196,32 @@ class ModuloCatalogo:
             else f"Nuevo {self.NOMBRE_SINGULAR}"
         )
 
-        alto = 170 + 68 * len(self.CAMPOS)
+        alto = 240 + 72 * len(self.CAMPOS)
 
         ventana = tk.Toplevel(self.root)
         ventana.title(titulo)
         ventana.resizable(False, False)
-        ventana.configure(bg=d.BLANCO)
+        ventana.configure(bg=d.FONDO)
         ventana.transient(self.root)
         ventana.grab_set()
 
         ventana.update_idletasks()
-        x = (ventana.winfo_screenwidth() - 430) // 2
+        x = (ventana.winfo_screenwidth() - 440) // 2
         y = (ventana.winfo_screenheight() - alto) // 2
-        ventana.geometry(f"430x{alto}+{x}+{y}")
+        ventana.geometry(f"440x{alto}+{x}+{y}")
+
+        tarjeta = Tarjeta(ventana, bg=d.BLANCO, padding=24)
+        tarjeta.pack(fill="both", expand=True, padx=16, pady=16)
+        cuerpo = tarjeta.cuerpo
 
         tk.Label(
-            ventana, text=titulo, font=("Segoe UI", 17, "bold"),
+            cuerpo, text=titulo, font=ui_tema.fuente_titulo(18),
             bg=d.BLANCO, fg=d.VERDE_OSCURO
-        ).pack(pady=(22, 16))
+        ).pack(anchor="w")
+
+        tk.Frame(
+            cuerpo, bg=ui_tema.VERDE_MEDIO, height=3, width=46
+        ).pack(anchor="w", pady=(6, 16))
 
         entradas = {}
         for campo in self.CAMPOS:
@@ -218,20 +230,21 @@ class ModuloCatalogo:
                 texto += " (opcional)"
 
             tk.Label(
-                ventana, text=texto, font=("Segoe UI", 10, "bold"),
+                cuerpo, text=texto, font=ui_tema.fuente_texto(10, "bold"),
                 bg=d.BLANCO, fg=d.TEXTO
-            ).pack(anchor="w", padx=45)
+            ).pack(anchor="w")
 
             if campo.get("opciones"):
                 entrada = ttk.Combobox(
-                    ventana, values=campo["opciones"],
-                    state="readonly", font=("Segoe UI", 11)
+                    cuerpo, values=campo["opciones"],
+                    state="readonly", font=ui_tema.fuente_texto(10),
+                    style="Tema.TCombobox"
                 )
             else:
-                entrada = tk.Entry(
-                    ventana, font=("Segoe UI", 11), relief="solid", bd=1
+                entrada = ui_tema.entrada(
+                    cuerpo, font=ui_tema.fuente_texto(10)
                 )
-            entrada.pack(fill="x", padx=45, pady=(4, 10))
+            entrada.pack(fill="x", pady=(4, 10))
 
             if editando and registro[campo["clave"]]:
                 if isinstance(entrada, ttk.Combobox):
@@ -293,14 +306,10 @@ class ModuloCatalogo:
             ventana.destroy()
             self.cargar()
 
-        tk.Button(
-            ventana,
-            text="GUARDAR CAMBIOS" if editando else "GUARDAR",
-            command=guardar,
-            font=("Segoe UI", 10, "bold"),
-            bg=d.VERDE_CLARO, fg=d.BLANCO,
-            activebackground="#689F38", activeforeground=d.BLANCO,
-            relief="flat", cursor="hand2", pady=10
-        ).pack(fill="x", padx=45, pady=(8, 20))
+        ui_tema.boton(
+            cuerpo,
+            "GUARDAR CAMBIOS" if editando else "GUARDAR",
+            guardar, principal=True
+        ).pack(fill="x", pady=(12, 0))
 
         ventana.bind("<Return>", lambda evento: guardar())
