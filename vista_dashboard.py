@@ -32,6 +32,9 @@ class DashboardApp:
         self.root.title(titulo)
         self.root.geometry("1240x760")
         self.root.minsize(1040, 660)
+        self.root.geometry("1240x760")
+        self.root.minsize(1040, 660)
+        self.root.resizable(True, True)
         self.root.configure(bg=ui_tema.FONDO)
 
         # Paleta pastel compartida con el resto de pantallas
@@ -223,6 +226,75 @@ class DashboardApp:
             fg=self.TEXTO_SECUNDARIO,
             anchor="w",
         ).pack(anchor="w", pady=(2, 0))
+        
+        
+        # Botón para cerrar sesión y cambiar de usuario
+        self.btn_cerrar_sesion = tk.Button(
+            self.menu,
+            text="↪  Cerrar sesión",
+            command=self.cerrar_sesion,
+            font=ui_tema.fuente_texto(10, "bold"),
+            bg=self.SIDEBAR_ACTIVO,
+            fg=self.VERDE_OSCURO,
+            activebackground=self.VERDE_SUAVE,
+            activeforeground=self.VERDE_OSCURO,
+            relief="flat",
+            bd=0,
+            highlightthickness=0,
+            cursor="hand2",
+            pady=10,
+        )
+        self.btn_cerrar_sesion.pack(
+            side="bottom",
+            fill="x",
+            padx=14,
+            pady=(0, 12),
+        )
+
+        self.btn_cerrar_sesion.bind(
+            "<Enter>",
+            lambda evento: self.btn_cerrar_sesion.configure(
+                bg=self.VERDE_SUAVE
+            ),
+        )
+        self.btn_cerrar_sesion.bind(
+            "<Leave>",
+            lambda evento: self.btn_cerrar_sesion.configure(
+                bg=self.SIDEBAR_ACTIVO
+            ),
+        )
+        
+        
+    def cerrar_sesion(self):
+        """Regresa al login para permitir cambiar de usuario."""
+
+        confirmar = messagebox.askyesno(
+            "Cerrar sesión",
+            f"¿Deseas cerrar la sesión de {self.nombre}?",
+            parent=self.root,
+        )
+
+        if not confirmar:
+            return
+
+        # Eliminar el dashboard y sus módulos de la ventana actual.
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        try:
+            # Reutilizar la misma ventana para regresar al login.
+            from vista_login import LoginApp
+            LoginApp(self.root)
+
+        except Exception as error:
+            messagebox.showerror(
+                "Error al cerrar sesión",
+                "No se pudo regresar a la pantalla de inicio.\n\n"
+                f"Detalle: {error}",
+                parent=self.root,
+            )
+
+
 
     def color_boton_menu(self, texto, pasando=False):
         """Color del botón del menú: activo, con el mouse encima o normal."""

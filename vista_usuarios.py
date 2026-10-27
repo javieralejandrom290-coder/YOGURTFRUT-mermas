@@ -8,7 +8,7 @@ from base_datos import obtener_conexion
 from ui_comunes import Tarjeta, crear_boton, crear_tabla
 
 
-ROLES = ["Administrador", "Gerente", "Empleado"]
+ROLES = ["Administrador", "Gerente"]
 LARGO_MINIMO_CONTRASENA = 4
 
 

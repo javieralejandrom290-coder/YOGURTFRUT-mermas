@@ -518,6 +518,8 @@ def crear_logo(padre, bg, alto=44, texto="YOGUFRUT", fg=None):
             return etiqueta
         except Exception:
             pass
+        
+        
 
     return tk.Label(
         padre,
@@ -526,3 +528,12 @@ def crear_logo(padre, bg, alto=44, texto="YOGUFRUT", fg=None):
         bg=bg,
         fg=fg,
     )
+
+
+# Compatibilidad con módulos que utilizan el nombre en plural.
+def crear_tablas(d, contenedor, columnas):
+    """
+    Alias de crear_tabla para conservar compatibilidad
+    con las pantallas existentes.
+    """
+    return crear_tabla(d, contenedor, columnas)
