@@ -1,11 +1,20 @@
 import sqlite3
 import pathlib
+import sys
 from datetime import date
 
 import seguridad
 
+# Carpeta del programa. Empaquetado como .exe (PyInstaller), __file__ apunta
+# a una carpeta interna o temporal, así que la base se guarda junto al .exe
+# para que los datos no se pierdan al cerrarlo.
+if getattr(sys, "frozen", False):
+    CARPETA_PROGRAMA = pathlib.Path(sys.executable).resolve().parent
+else:
+    CARPETA_PROGRAMA = pathlib.Path(__file__).resolve().parent
+
 # Ruta de la base de datos
-RUTA_BASE_DATOS = pathlib.Path(__file__).resolve().parent / "mermas.db"
+RUTA_BASE_DATOS = CARPETA_PROGRAMA / "mermas.db"
 
 # Tipos de merma del catálogo (modelo relacional, tabla TipoMerma)
 TIPOS_MERMA = ["Natural", "Operativa", "Administrativa", "Hurto"]
