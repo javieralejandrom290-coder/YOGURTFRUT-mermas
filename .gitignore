@@ -7,6 +7,11 @@ venv/
 .venv/
 env/
 
+# Archivos generados al compilar el .exe con PyInstaller
+build/
+dist/
+*.spec
+
 # Base de datos local (cada quien genera la suya al correr main.py)
 *.db
 

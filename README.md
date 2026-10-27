@@ -4,7 +4,11 @@ Sistema de escritorio para registrar y analizar las mermas (pérdidas de product
 
 ## Cómo correr el programa
 
-Solo necesitas tener **Python 3.10 o superior**. No hay dependencias que instalar.
+Necesitas **Python 3.10 o superior** y la librería **Pillow** (para las imágenes de la interfaz). Instálala una sola vez con:
+
+```bash
+pip install pillow
+```
 
 Abre una terminal **dentro de la carpeta del proyecto** (donde está `main.py`). El programa se puede abrir de dos formas:
 

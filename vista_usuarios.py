@@ -258,7 +258,7 @@ class ModuloUsuarios:
         self.abrir_ventana("Nuevo usuario", [
             ("nombre", "Nombre completo", "texto", ""),
             ("usuario", "Usuario", "texto", ""),
-            ("rol", "Rol", ROLES, "Empleado"),
+            ("rol", "Rol", ROLES, ROLES[-1]),
             ("contrasena", "Contraseña", "contrasena", ""),
             ("confirmar", "Confirmar contraseña", "contrasena", ""),
         ], guardar)
