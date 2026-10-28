@@ -277,6 +277,17 @@ class DashboardApp:
         if not confirmar:
             return
 
+        # Restablecer el tamaño exacto del login y bloquear el redimensionamiento antes de limpiar
+        self.root.state("normal")
+        self.root.geometry("1000x700")
+        self.root.resizable(False, False)
+
+        # Centrar la ventana de login en la pantalla
+        self.root.update_idletasks()
+        x = (self.root.winfo_screenwidth() - 1000) // 2
+        y = (self.root.winfo_screenheight() - 700) // 2
+        self.root.geometry(f"1000x700+{x}+{y}")
+
         # Eliminar el dashboard y sus módulos de la ventana actual.
         for widget in self.root.winfo_children():
             widget.destroy()

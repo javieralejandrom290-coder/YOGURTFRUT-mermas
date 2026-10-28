@@ -1,6 +1,5 @@
-
+from tkinter import messagebox, filedialog
 import tkinter as tk
-from tkinter import messagebox
 import sqlite3
 import os
 
@@ -21,15 +20,16 @@ class LoginApp:
 
         self.root.title("YOGUFRUT | Control de Mermas")
         self.root.geometry("1000x700")
-        self.root.resizable(True, True)
+        
+        # SOLUCIÓN AL MAXIMIZAR: Bloqueamos el redimensionamiento para mantener el diseño fijo y profesional
+        self.root.resizable(False, False)
+        
         self.root.configure(bg=ui_tema.FONDO)
 
-        # Centrar la ventana.
         self.root.update_idletasks()
 
         x = (self.root.winfo_screenwidth() - 1000) // 2
         y = (self.root.winfo_screenheight() - 700) // 2
-
         self.root.geometry(f"1000x700+{x}+{y}")
 
         ui_tema.aplicar_tema(self.root)
@@ -47,7 +47,7 @@ class LoginApp:
     verificar_hash = staticmethod(seguridad.verificar_hash)
 
     # --------------------------------------------------
-    # CREAR EL PRIMER ADMINISTRADOR
+    # CONFIGURACIÓN DEL PRIMER ADMINISTRADOR
     # --------------------------------------------------
 
     def verificar_administrador(self):
@@ -63,7 +63,6 @@ class LoginApp:
 
     def crear_primer_administrador(self):
         ventana = tk.Toplevel(self.root)
-
         ventana.title("Configuración inicial")
         ventana.geometry("470x600")
         ventana.resizable(False, False)
@@ -72,10 +71,8 @@ class LoginApp:
         ventana.grab_set()
 
         ventana.update_idletasks()
-
         x = (ventana.winfo_screenwidth() - 470) // 2
         y = (ventana.winfo_screenheight() - 600) // 2
-
         ventana.geometry(f"470x600+{x}+{y}")
 
         tarjeta = Tarjeta(
@@ -131,7 +128,6 @@ class LoginApp:
                 show="*" if ocultar else ""
             )
             entrada.pack(fill="x", pady=(3, 8))
-
             campos[clave] = entrada
 
         def guardar_administrador():
@@ -140,7 +136,7 @@ class LoginApp:
             contrasena = campos["contrasena"].get()
             confirmar = campos["confirmar"].get()
 
-            if not nombre or not usuario or not contrasena or not confirmar:
+            if not all([nombre, usuario, contrasena, confirmar]):
                 messagebox.showwarning(
                     "Campos obligatorios",
                     "Completa todos los campos para continuar.",
@@ -231,10 +227,14 @@ class LoginApp:
     # --------------------------------------------------
 
     def crear_interfaz(self):
-        """Construye el login con una fotografía a la izquierda."""
-
         ancho_izquierdo = 440
+        alto_panel = 700
 
+        carpeta_proyecto = os.path.dirname(
+            os.path.abspath(__file__)
+        )
+
+        # Panel izquierdo
         panel_izquierdo = tk.Frame(
             self.root,
             width=ancho_izquierdo,
@@ -243,54 +243,139 @@ class LoginApp:
         panel_izquierdo.pack(side="left", fill="y")
         panel_izquierdo.pack_propagate(False)
 
-        ruta_imagen = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "Imagenes",
-            "yogurthfrut.jpeg"
-        )
-
+        # Crear el lienzo antes de cargar la imagen
         lienzo = tk.Canvas(
             panel_izquierdo,
             width=ancho_izquierdo,
-            height=700,
+            height=alto_panel,
             bd=0,
             highlightthickness=0,
             bg="#2F7D32"
         )
         lienzo.pack(fill="both", expand=True)
 
-        try:
-            with Image.open(ruta_imagen) as imagen_archivo:
-                imagen_original = imagen_archivo.convert("RGB")
+        # Buscar imágenes en el proyecto y sus subcarpetas
+        extensiones = (".jpg", ".jpeg", ".png", ".webp")
+        palabras_prioritarias = (
+            "yogurthfrut",
+            "yogurfrut",
+            "yogufrut",
+            "yogur",
+            "frut",
+            "portada",
+            "fondo",
+            "login",
+            "banner"
+        )
 
-            imagen_fondo = ImageOps.fit(
-                imagen_original,
-                (ancho_izquierdo, 700),
-                method=Image.Resampling.LANCZOS,
-                centering=(0.52, 0.5)
+        imagenes_encontradas = []
+
+        carpetas_ignoradas = {
+            ".git",
+            ".venv",
+            "venv",
+            "__pycache__",
+            "node_modules"
+        }
+
+        for carpeta_actual, subcarpetas, archivos in os.walk(
+            carpeta_proyecto
+        ):
+            subcarpetas[:] = [
+                carpeta for carpeta in subcarpetas
+                if carpeta.lower() not in carpetas_ignoradas
+            ]
+
+            for archivo in archivos:
+                if archivo.lower().endswith(extensiones):
+                    ruta = os.path.join(carpeta_actual, archivo)
+                    imagenes_encontradas.append(ruta)
+
+        # Dar prioridad a la fotografía de YOGUFRUT
+        ruta_imagen = None
+
+        for palabra in palabras_prioritarias:
+            for ruta in imagenes_encontradas:
+                nombre_archivo = os.path.basename(ruta).lower()
+
+                if palabra in nombre_archivo:
+                    ruta_imagen = ruta
+                    break
+
+            if ruta_imagen:
+                break
+
+        # Si no encuentra una imagen identificable, pedirla manualmente
+        if not ruta_imagen:
+            messagebox.showinfo(
+                "Seleccionar fotografía",
+                "No encontré una imagen con un nombre reconocible.\n\n"
+                "Selecciona la fotografía que quieres mostrar "
+                "en el panel izquierdo.",
+                parent=self.root
             )
 
-            imagen_fondo = ImageEnhance.Brightness(
-                imagen_fondo
-            ).enhance(0.66)
-
-            self.imagen_fondo_login = ImageTk.PhotoImage(
-                imagen_fondo
+            ruta_imagen = filedialog.askopenfilename(
+                parent=self.root,
+                title="Selecciona la fotografía de YOGUFRUT",
+                initialdir=carpeta_proyecto,
+                filetypes=[
+                    (
+                        "Archivos de imagen",
+                        "*.jpg *.jpeg *.png *.webp"
+                    ),
+                    ("Todos los archivos", "*.*")
+                ]
             )
 
-            lienzo.create_image(
-                0,
-                0,
-                image=self.imagen_fondo_login,
-                anchor="nw"
-            )
+        # Cargar la imagen seleccionada
+        if ruta_imagen:
+            try:
+                with Image.open(ruta_imagen) as archivo:
+                    imagen_original = archivo.convert("RGB")
 
-        except (OSError, ValueError) as error:
-            print(f"No se pudo cargar la imagen del login: {error}")
-            lienzo.configure(bg="#2F7D32")
+                imagen_fondo = ImageOps.fit(
+                    imagen_original,
+                    (ancho_izquierdo, alto_panel),
+                    method=Image.Resampling.LANCZOS,
+                    centering=(0.5, 0.5)
+                )
 
-        # Textos superpuestos sobre la fotografía.
+                # Oscurecer ligeramente para que el texto sea legible
+                imagen_fondo = ImageEnhance.Brightness(
+                    imagen_fondo
+                ).enhance(0.66)
 
+                self.imagen_fondo_login = ImageTk.PhotoImage(
+                    imagen_fondo,
+                    master=self.root
+                )
+
+                lienzo.create_image(
+                    0,
+                    0,
+                    image=self.imagen_fondo_login,
+                    anchor="nw"
+                )
+
+                # Mantener una referencia para que Tkinter no la elimine
+                lienzo.imagen_fondo = self.imagen_fondo_login
+
+                print("Fotografía cargada correctamente:")
+                print(ruta_imagen)
+
+            except Exception as error:
+                print("Error al cargar la fotografía:", error)
+
+                messagebox.showerror(
+                    "Error con la fotografía",
+                    f"No se pudo cargar la imagen.\n\n{error}",
+                    parent=self.root
+                )
+        else:
+            print("No se seleccionó ninguna fotografía.")
+
+        # Textos sobre la fotografía
         lienzo.create_text(
             28, 42,
             text="YOGUFRUT",
@@ -331,8 +416,7 @@ class LoginApp:
             fill="white"
         )
 
-        # Panel derecho: formulario de acceso.
-
+        # Panel derecho
         area_derecha = tk.Frame(
             self.root,
             bg="#F5F7EF"
@@ -506,7 +590,8 @@ class LoginApp:
         else:
             messagebox.showerror(
                 "Acceso denegado",
-                "Usuario o contraseña incorrectos, o la cuenta está inactiva.",
+                "Usuario o contraseña incorrectos, "
+                "o la cuenta está inactiva.",
                 parent=self.root
             )
 
@@ -514,26 +599,24 @@ class LoginApp:
             self.entrada_contrasena.focus_set()
 
     # --------------------------------------------------
-    # ABRIR EL PANEL PRINCIPAL
+    # ABRIR EL DASHBOARD
     # --------------------------------------------------
 
     def abrir_dashboard(self, usuario_id, nombre, rol):
         try:
             from vista_dashboard import DashboardApp
 
-            # Eliminar todos los widgets del login.
             for widget in self.root.winfo_children():
                 widget.destroy()
 
-            # Liberar la referencia de la fotografía.
             self.imagen_fondo_login = None
 
-            # Ajustar la ventana del sistema principal.
+            # Al abrir el panel principal (dashboard), sí permitimos que la ventana sea normal/redimensionable
+            self.root.resizable(True, True)
             self.root.state("normal")
             self.root.geometry("1240x760")
             self.root.minsize(1040, 660)
 
-            # Crear el dashboard en la misma ventana.
             DashboardApp(
                 self.root,
                 usuario_id=usuario_id,
